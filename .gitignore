@@ -1,0 +1,65 @@
+# === Python / FastAPI ===
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.so
+*.egg-info/
+*.eggs/
+*.log
+*.sqlite3
+*.db
+
+# Virtual environments
+venv/
+env/
+.venv/
+.env/
+
+# VSCode / PyCharm
+.vscode/
+.idea/
+
+# pytest / coverage
+htmlcov/
+.tox/
+.coverage
+coverage.xml
+.cache/
+pytest_cache/
+
+# Pydantic / FastAPI
+.env
+.env.*
+
+# === Node.js ===
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
+
+# Build output
+dist/
+build/
+out/
+
+# === OS / Editor junk ===
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+
+# === Docker ===
+*.pid
+*.seed
+*.bak
+*.backup
+docker-compose.override.yml
+
+# === Misc ===
+logs/
+tmp/
