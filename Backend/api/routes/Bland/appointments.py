@@ -238,7 +238,7 @@ async def book_appointment(request: Request):
             status_code=500
         )
 
-@Router.get("/Bland/get-appointment")
+@Router.post("/Bland/get-appointment")
 async def get_appointment(request: Request):
     try:
         body = await request.json()

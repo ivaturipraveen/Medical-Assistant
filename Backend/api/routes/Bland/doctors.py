@@ -10,7 +10,7 @@ from database import conn,cursor
 
 Router=APIRouter()
 
-@Router.get("/Bland/get-doctors")
+@Router.post("/Bland/get-doctors")
 async def get_doctors(request : Request):
     d = json.loads(await request.body())
     print("Received JSON:", d)
@@ -38,7 +38,7 @@ async def get_doctors(request : Request):
     except Exception as e:
         return {"error": str(e)}
 
-@Router.get("/Bland/time-slot")
+@Router.post("/Bland/time-slot")
 async def get_time_slot(request: Request):
     try:
         data = await request.json()
@@ -90,7 +90,7 @@ async def get_time_slot(request: Request):
     except Exception as e:
         return JSONResponse({"error": str(e)}, status_code=500)
     
-@Router.get("/Bland/check-avail")
+@Router.post("/Bland/check-avail")
 async def check_avail(request: Request):
     data = await request.json()
     doctor_name = data.get("doctor_name", "").strip()
@@ -152,7 +152,7 @@ async def check_avail(request: Request):
 
     return JSONResponse({"available": False, "suggestions": suggestions}, status_code=200)
 
-@Router.get("/Bland/fetch-date")
+@Router.post("/Bland/fetch-date")
 async def get_available_booking_dates():
     try:
         today = datetime.today()
