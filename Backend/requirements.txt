@@ -4,5 +4,3 @@ psycopg2-binary
 python-dotenv
 phonenumbers
 python-dateutil
-google-auth
-google-api-python-client

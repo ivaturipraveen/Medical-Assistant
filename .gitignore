@@ -15,6 +15,7 @@ venv/
 env/
 .venv/
 .env/
+/Backend/voice-233615-48c406a59851.json
 
 # VSCode / PyCharm
 .vscode/
