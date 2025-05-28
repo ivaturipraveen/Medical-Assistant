@@ -212,7 +212,7 @@ def create_calendar_event(doctor_calendar_id, patient_name, appointment_datetime
     ).execute()
 
     return event_result.get('id')
-
+    
 def update_calendar_event(event_id, calendar_id, title, new_datetime, duration_minutes=30):
     event = calendar_service.events().get(calendarId=calendar_id, eventId=event_id).execute()
     event['start'] = {'dateTime': new_datetime.isoformat(), 'timeZone': 'UTC'}
