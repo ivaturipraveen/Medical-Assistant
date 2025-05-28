@@ -116,7 +116,7 @@ async def book_appointment(request: Request):
         matched_name, _, _ = result
         lookup_name = matched_name.lower()
 
-        # 2) Fetch doctor ID, capacity, and email
+        # 2) Fetch doctor ID, capacity, and calendar ID
         cursor.execute(
             "SELECT id, max_patients, email FROM doctors WHERE LOWER(name) = %s",
             (lookup_name,)
@@ -128,94 +128,104 @@ async def book_appointment(request: Request):
         if max_patients <= 0:
             return JSONResponse({"response": f"No available slots for Dr. {matched_name}."}, status_code=409)
 
-        # 3) Parse the desired slot time
-        start_str = desired_slot.split("-")[0].strip()  # e.g. "11:30 AM"
+        # 3) Parse the desired slot time + date
+        start_str = desired_slot.split("-")[0].strip()           # "11:30 AM"
         appt_time = datetime.strptime(start_str, "%I:%M %p").time()
+        appt_date = datetime.strptime(raw_date, "%Y-%m-%d").date() if raw_date else date.today()
+        full_dt   = datetime.combine(appt_date, appt_time)
 
-        # 4) Parse date or default to today
-        if raw_date:
-            appt_date = datetime.strptime(raw_date, "%Y-%m-%d").date()
-        else:
-            appt_date = date.today()
-
-        # Combine date and time
-        full_dt = datetime.combine(appt_date, appt_time)
-
-        # 5) Check for existing appointment for patient
+        # 4) Check for existing appointment
         cursor.execute(
-            "SELECT id, doctor_id FROM appointments WHERE patient_id = %s",
+            "SELECT id, doctor_id, calendar_event_id FROM appointments WHERE patient_id = %s",
             (patient_id,)
         )
-        existing_appt = cursor.fetchone()
+        existing = cursor.fetchone()
 
-        if existing_appt:
-            # Update existing appointment
-            old_appt_id, old_doctor_id = existing_appt
-            # Increment old doctor's slot count back
+        if existing:
+            # ---- RESCHEDULE BRANCH ----
+            old_apt_id, old_doc_id, old_event_id = existing
+
+            # Return old slot
             cursor.execute(
                 "UPDATE doctors SET max_patients = max_patients + 1 WHERE id = %s",
-                (old_doctor_id,)
+                (old_doc_id,)
             )
-            # Update appointment
+            # Update the appointment row
             cursor.execute(
                 """
                 UPDATE appointments
-                SET doctor_id = %s, appointment_time = %s, status = %s
+                SET doctor_id = %s,
+                    appointment_time = %s,
+                    status = %s,
+                    calendar_event_id = %s
                 WHERE id = %s
                 RETURNING id
-                """, (doctor_id, full_dt, "scheduled", old_appt_id)
+                """,
+                (doctor_id, full_dt, "scheduled", old_event_id, old_apt_id)
             )
             appointment_id = cursor.fetchone()[0]
-            message = "Existing appointment updated successfully."
+            message = "Appointment rescheduled successfully."
+
+            # Update the Google Calendar event rather than creating a new one
+            updated_event_id = update_calendar_event(
+                old_event_id,
+                doctor_calendar_id,
+                f"Appointment: {patient_id}",
+                full_dt,
+                duration_minutes=30
+            )
+            calendar_event_id = updated_event_id
+
         else:
-            # Create new appointment
+            # ---- NEW BOOKING BRANCH ----
             cursor.execute(
                 """
                 INSERT INTO appointments
                   (patient_id, doctor_id, appointment_time, status, duration)
                 VALUES (%s, %s, %s, %s, %s)
                 RETURNING id
-                """, (patient_id, doctor_id, full_dt, "scheduled", 30)
+                """,
+                (patient_id, doctor_id, full_dt, "scheduled", 30)
             )
             appointment_id = cursor.fetchone()[0]
             message = "New appointment booked successfully."
 
-        # 6) Update patient's phone and doctor_id
+            # Create a brand-new calendar event
+            calendar_event_id = create_calendar_event(
+                doctor_calendar_id,
+                f"Appointment: {patient_id}",
+                full_dt,
+                duration_minutes=30
+            )
+
+        # 5) Update patient record & doctor capacity
         cursor.execute(
             "UPDATE patients SET phone_number = %s, doctor_id = %s WHERE id = %s",
             (phone, doctor_id, patient_id)
         )
-
-        # 7) Decrement new doctor's available slots
         cursor.execute(
             "UPDATE doctors SET max_patients = max_patients - 1 WHERE id = %s",
             (doctor_id,)
         )
 
-        # Fetch patient name for calendar event
-        cursor.execute("SELECT full_name FROM patients WHERE id = %s", (patient_id,))
-        patient_name = cursor.fetchone()[0]
-
-        # 8) Create Google Calendar event
-        event_id = create_calendar_event(
-            doctor_calendar_id,
-            patient_name,
-            full_dt,
-            duration_minutes=30
-        )
-
+        # 6) Commit all DB changes
         conn.commit()
 
+        # 7) Send SMS (if desired)
+        # ... your Twilio or alternative SMS code here ...
+
+        # 8) Return full payload, including explicit appointment_date
         return {
             "message": message,
             "appointment_id": appointment_id,
             "doctor_name": matched_name,
             "patient_id": patient_id,
-            "appointment_timing": full_dt.strftime("%Y-%m-%d %I:%M %p"),
+            "appointment_date": appt_date.strftime("%Y-%m-%d"),            # new!
+            "appointment_time": full_dt.strftime("%I:%M %p"),
             "status": "scheduled",
             "time_duration": 30,
             "remaining_slots": max_patients - 1,
-            "calendar_event_id": event_id
+            "calendar_event_id": calendar_event_id
         }
 
     except Exception as e:
