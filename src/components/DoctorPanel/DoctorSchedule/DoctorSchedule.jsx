@@ -9,84 +9,111 @@ const DoctorSchedule = ({ doctor }) => {
   const [availableSlots, setAvailableSlots] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [currentMonth, setCurrentMonth] = useState(new Date());
 
-  useEffect(() => {
-    const fetchAppointmentsAndSlots = async () => {
-      try {
-        setLoading(true);
+  const fetchAppointmentsAndSlots = async (startDate, endDate) => {
+    try {
+      setLoading(true);
+      
+      // Fetch booked appointments with date range
+      const appointmentsResponse = await fetch(
+        `https://medical-assistant1.onrender.com/appointments?doctor_id=${doctor.id}&start_date=${startDate.toISOString()}&end_date=${endDate.toISOString()}`
+      );
+      
+      if (!appointmentsResponse.ok) {
+        throw new Error(`Failed to fetch appointments: ${appointmentsResponse.statusText}`);
+      }
+      
+      const appointmentsData = await appointmentsResponse.json();
+      console.log('Fetched appointments:', appointmentsData);
+
+      if (appointmentsData.error) {
+        throw new Error(appointmentsData.error);
+      }
+
+      // Fetch available time slots
+      const timeSlotsResponse = await fetch('https://medical-assistant1.onrender.com/Bland/time-slot', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          d_name: doctor.name
+        })
+      });
+
+      if (!timeSlotsResponse.ok) {
+        throw new Error(`Failed to fetch time slots: ${timeSlotsResponse.statusText}`);
+      }
+
+      const timeSlotsData = await timeSlotsResponse.json();
+
+      // Group appointments by date
+      const appointmentsByDate = {};
+      (appointmentsData.appointments || []).forEach(apt => {
+        const appointmentDate = new Date(apt.appointment_time);
+        const dateStr = appointmentDate.toLocaleDateString('en-CA');
         
-        // Fetch booked appointments
-        const appointmentsResponse = await fetch(
-          `https://medical-assistant1.onrender.com/appointments?doctor_id=${doctor.id}`
-        );
-        
-        if (!appointmentsResponse.ok) {
-          throw new Error(`Failed to fetch appointments: ${appointmentsResponse.statusText}`);
+        if (!appointmentsByDate[dateStr]) {
+          appointmentsByDate[dateStr] = [];
         }
         
-        const appointmentsData = await appointmentsResponse.json();
-        if (appointmentsData.error) {
-          throw new Error(appointmentsData.error);
-        }
-
-        // Fetch available time slots
-        const timeSlotsResponse = await fetch('https://medical-assistant1.onrender.com/Bland/time-slot', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            d_name: doctor.name
+        appointmentsByDate[dateStr].push({
+          ...apt,
+          status: apt.status || 'scheduled',
+          patient_name: apt.patient_name || 'Patient',
+          appointment_time: apt.appointment_time,
+          formatted_time: appointmentDate.toLocaleTimeString([], {
+            hour: '2-digit',
+            minute: '2-digit',
+            hour12: true
           })
         });
+      });
 
-        if (!timeSlotsResponse.ok) {
-          throw new Error(`Failed to fetch time slots: ${timeSlotsResponse.statusText}`);
-        }
-
-        const timeSlotsData = await timeSlotsResponse.json();
-
-        // Group appointments by date
-        const appointmentsByDate = {};
-        (appointmentsData.appointments || []).forEach(apt => {
-          const appointmentDate = new Date(apt.appointment_time);
-          const dateStr = appointmentDate.toLocaleDateString('en-CA');
-          
-          if (!appointmentsByDate[dateStr]) {
-            appointmentsByDate[dateStr] = [];
-          }
-          
-          appointmentsByDate[dateStr].push({
-            ...apt,
-            status: apt.status || 'scheduled',
-            patient_name: apt.patient_name || 'Patient',
-            appointment_time: apt.appointment_time,
-            formatted_time: appointmentDate.toLocaleTimeString([], {
-              hour: '2-digit',
-              minute: '2-digit',
-              hour12: true
-            })
-          });
-        });
-
-        console.log('Appointments by date:', appointmentsByDate); // Debug log
-        setAppointments(appointmentsByDate);
-        setAvailableSlots(timeSlotsData.response || []);
-      } catch (err) {
-        console.error('Error fetching data:', err);
-        setError(err.message);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    if (doctor?.id) {
-      fetchAppointmentsAndSlots();
+      console.log('Appointments by date:', appointmentsByDate);
+      setAppointments(prevAppointments => ({
+        ...prevAppointments,
+        ...appointmentsByDate
+      }));
+      setAvailableSlots(timeSlotsData.response || []);
+    } catch (err) {
+      console.error('Error fetching data:', err);
+      setError(err.message);
+    } finally {
+      setLoading(false);
     }
-  }, [doctor]);
+  };
+
+  useEffect(() => {
+    if (doctor?.id) {
+      // Calculate start and end dates for the current month view
+      const start = new Date(currentMonth.getFullYear(), currentMonth.getMonth(), 1);
+      const end = new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 0);
+      
+      // Clear previous appointments when fetching new ones
+      setAppointments({});
+      
+      fetchAppointmentsAndSlots(start, end);
+    }
+  }, [doctor?.id, currentMonth]);
+
+  useEffect(() => {
+    // Debug log when appointments or selected date changes
+    const selectedDateStr = selectedDate.toLocaleDateString('en-CA');
+    console.log('Current state:', {
+      selectedDate: selectedDateStr,
+      appointments: appointments[selectedDateStr],
+      allAppointments: appointments
+    });
+  }, [selectedDate, appointments]);
 
   const handleDateChange = (date) => {
     setSelectedDate(date);
+  };
+
+  const handleMonthChange = (date) => {
+    setCurrentMonth(date);
   };
 
   // Helper function to check if a time slot is booked on the selected date
@@ -95,14 +122,38 @@ const DoctorSchedule = ({ doctor }) => {
     const selectedDateStr = selectedDate.toLocaleDateString('en-CA');
     const dateAppointments = appointments[selectedDateStr] || [];
 
+    console.log('Checking slot:', {
+      timeSlot,
+      startTime,
+      selectedDate: selectedDateStr,
+      appointments: dateAppointments
+    });
+
     return dateAppointments.some(apt => {
       const aptDate = new Date(apt.appointment_time);
-      const aptTime = aptDate.toLocaleTimeString([], {
-        hour: '2-digit',
-        minute: '2-digit',
-        hour12: true
+      const aptHours = aptDate.getHours();
+      const aptMinutes = aptDate.getMinutes();
+      
+      // Parse the slot time
+      const [time, period] = startTime.split(' '); // e.g., "9:00 AM"
+      const [hours, minutes] = time.split(':').map(Number);
+      const is12Hour = period.toUpperCase() === 'PM';
+      
+      // Convert 12-hour slot time to 24-hour for comparison
+      let slotHours = hours;
+      if (is12Hour && hours !== 12) {
+        slotHours += 12;
+      } else if (!is12Hour && hours === 12) {
+        slotHours = 0;
+      }
+
+      console.log('Time comparison:', {
+        appointmentTime: `${aptHours}:${aptMinutes}`,
+        slotTime: `${slotHours}:${minutes}`,
+        matches: aptHours === slotHours && aptMinutes === minutes
       });
-      return aptTime === startTime;
+
+      return aptHours === slotHours && aptMinutes === minutes;
     });
   };
 
@@ -114,12 +165,23 @@ const DoctorSchedule = ({ doctor }) => {
 
     return dateAppointments.find(apt => {
       const aptDate = new Date(apt.appointment_time);
-      const aptTime = aptDate.toLocaleTimeString([], {
-        hour: '2-digit',
-        minute: '2-digit',
-        hour12: true
-      });
-      return aptTime === startTime;
+      const aptHours = aptDate.getHours();
+      const aptMinutes = aptDate.getMinutes();
+      
+      // Parse the slot time
+      const [time, period] = startTime.split(' '); // e.g., "9:00 AM"
+      const [hours, minutes] = time.split(':').map(Number);
+      const is12Hour = period.toUpperCase() === 'PM';
+      
+      // Convert 12-hour slot time to 24-hour for comparison
+      let slotHours = hours;
+      if (is12Hour && hours !== 12) {
+        slotHours += 12;
+      } else if (!is12Hour && hours === 12) {
+        slotHours = 0;
+      }
+
+      return aptHours === slotHours && aptMinutes === minutes;
     });
   };
 
@@ -131,9 +193,6 @@ const DoctorSchedule = ({ doctor }) => {
     return <div className="error-message">{error}</div>;
   }
 
-  // Remove "Dr." prefix if present
-  const doctorName = doctor.name.replace(/^Dr\.\s*/i, '');
-
   return (
     <div className="doctor-schedule">
       <div className="schedule-container">
@@ -141,6 +200,7 @@ const DoctorSchedule = ({ doctor }) => {
           <Calendar
             onChange={handleDateChange}
             value={selectedDate}
+            onActiveStartDateChange={({ activeStartDate }) => handleMonthChange(activeStartDate)}
             className="doctor-calendar"
             tileClassName={({ date }) => {
               const dateStr = date.toLocaleDateString('en-CA');

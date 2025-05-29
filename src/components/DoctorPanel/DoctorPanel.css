@@ -1,11 +1,11 @@
 .doctor-panel {
   padding: 28px;
-  background: linear-gradient(to bottom, #f1f5f9, #e2e8f0);
+  background: linear-gradient(to bottom, hsl(210, 40%, 96%));
   min-height: calc(100vh - 72px);
 }
 
 .welcome-section {
-  background: linear-gradient(135deg, #0c8990 0%, #2d82a8 100%);
+  background: linear-gradient(135deg, #0c8990 0%);
   border-radius: 20px;
   padding: 32px 40px;
   margin-bottom: 32px;
