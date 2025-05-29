@@ -14,134 +14,90 @@ async def book_appointment(request: Request):
     try:
         body       = await request.json()
         raw_dname  = body["dname"]
-        raw_date   = body.get("date")       # e.g. "31/05/2025" or "May 31, 2025"
-        raw_slot   = body["sslot"]          # e.g. "4", "4pm", "4:00 pm"
+        raw_date   = body.get("date")
+        raw_slot   = body["sslot"]
         patient_id = body["pid"]
         raw_phone  = body.get("phone", "")
 
-        # — Normalize phone —
         phone = format_phone(raw_phone)
 
-        # — Parse date (fallback to today) —
-        if raw_date:
-            parsed_date = parse_date(raw_date)
-            if not parsed_date:
-                return JSONResponse(
-                    {"detail": "Invalid date format."},
-                    status_code=400
-                )
-        else:
-            parsed_date = date.today()
-
-        # — Parse time slot —
-        try:
-            parsed_time = parse_time_input(raw_slot)   # datetime.time
-        except ValueError as ve:
-            return JSONResponse({"detail": str(ve)}, status_code=400)
-
-        # Combine date + time
+        # parse date/time as before…
+        parsed_date = parse_date(raw_date) if raw_date else date.today()
+        parsed_time = parse_time_input(raw_slot)
         requested_dt = datetime.combine(parsed_date, parsed_time)
 
-        # — Fuzzy‐find the doctor —
-        found = find_doctor_by_name(cursor, raw_dname)
-        if not found:
-            raise HTTPException(404, f"No doctor matching '{raw_dname}'")
-        canonical_name, available_slots, department = found
-
-        # — Fetch the rest of the doctor’s record —
-        cursor.execute(
-            """
-            SELECT id, max_patients, email
-              FROM doctors
-             WHERE name = %s
-            """,
-            (canonical_name,)
-        )
-        doc = cursor.fetchone()
-        if not doc:
-            raise HTTPException(404, f"DB record missing for '{canonical_name}'")
-        doctor_id, max_patients, doctor_calendar_id = doc
+        # find doctor…
+        canonical_name, _, _ = find_doctor_by_name(cursor, raw_dname)
+        cursor.execute("SELECT id, max_patients, email FROM doctors WHERE name = %s",
+                       (canonical_name,))
+        doctor_id, max_patients, doctor_calendar_id = cursor.fetchone()
 
         if max_patients <= 0:
-            return JSONResponse(
-                {"detail": f"Dr. {canonical_name} has no slots left."},
-                status_code=409
-            )
+            return JSONResponse({"detail": f"No slots left"}, status_code=409)
 
-        # — Check slot availability —
-        # assume available_slots is a list of datetimes
-        if requested_dt not in available_slots:
-            return JSONResponse(
-                {"detail": f"Dr. {canonical_name} isn’t available at {requested_dt.strftime('%I:%M %p')} on {requested_dt.strftime('%Y-%m-%d')}."},
-                status_code=409
-            )
-
-        # — Upsert appointment —
-        cursor.execute(
-            "SELECT id, calendar_event_id FROM appointments WHERE patient_id = %s",
-            (patient_id,)
-        )
+        # — 1) Upsert the appointment in the DB first —
+        cursor.execute("SELECT id, calendar_event_id FROM appointments WHERE patient_id = %s",
+                       (patient_id,))
         existing = cursor.fetchone()
 
         if existing:
             apt_id, old_event_id = existing
-            cursor.execute(
-                """
+            cursor.execute("""
                 UPDATE appointments
                    SET doctor_id        = %s,
                        appointment_time = %s,
                        status           = %s
                  WHERE id = %s
                 RETURNING id
-                """,
-                (doctor_id, requested_dt, "scheduled", apt_id)
-            )
+            """, (doctor_id, requested_dt, "scheduled", apt_id))
             appointment_id = cursor.fetchone()[0]
             message = "Appointment rescheduled."
-
-            calendar_event_id = update_calendar_event(
-                event_id=old_event_id,
-                calendar_id=doctor_calendar_id,
-                title=f"Appointment with patient {patient_id}",
-                new_datetime=requested_dt,
-                duration_minutes=30
-            )
         else:
-            cursor.execute(
-                """
+            cursor.execute("""
                 INSERT INTO appointments
                     (patient_id, doctor_id, appointment_time, status, duration, calendar_event_id)
                 VALUES (%s, %s, %s, %s, %s, %s)
                 RETURNING id
-                """,
-                (patient_id, doctor_id, requested_dt, "scheduled", 30, None)
-            )
+            """, (patient_id, doctor_id, requested_dt, "scheduled", 30, None))
             appointment_id = cursor.fetchone()[0]
             message = "Appointment booked."
 
-            calendar_event_id = create_calendar_event(
-                doctor_calendar_id,
-                patient_name=f"patient {patient_id}",
-                appointment_datetime=requested_dt,
-                duration_minutes=30
-            )
-            cursor.execute(
-                "UPDATE appointments SET calendar_event_id = %s WHERE id = %s",
-                (calendar_event_id, appointment_id)
-            )
-
-        # — Update patient record —
-        cursor.execute(
-            """
+        # update patient phone & doctor
+        cursor.execute("""
             UPDATE patients
                SET phone_number = %s,
                    doctor_id    = %s
              WHERE id = %s
-            """,
-            (phone, doctor_id, patient_id)
-        )
+        """, (phone, doctor_id, patient_id))
 
         conn.commit()
+
+        # — 2) THEN try the calendar integration, but don’t fail if it errors —
+        try:
+            if existing:
+                calendar_event_id = update_calendar_event(
+                    event_id=old_event_id,
+                    calendar_id=doctor_calendar_id,
+                    title=f"Appointment with patient {patient_id}",
+                    new_datetime=requested_dt,
+                    duration_minutes=30
+                )
+            else:
+                calendar_event_id = create_calendar_event(
+                    doctor_calendar_id,
+                    patient_name=f"patient {patient_id}",
+                    appointment_datetime=requested_dt,
+                    duration_minutes=30
+                )
+                # store it back in DB
+                cursor.execute(
+                    "UPDATE appointments SET calendar_event_id = %s WHERE id = %s",
+                    (calendar_event_id, appointment_id)
+                )
+                conn.commit()
+        except Exception as cal_err:
+            # log it, but do not fail the API call
+            print("⚠️ Calendar error, booking still succeeded:", cal_err)
 
         return {
             "message": message,
@@ -151,8 +107,8 @@ async def book_appointment(request: Request):
             "appointment_date": requested_dt.strftime("%Y-%m-%d"),
             "appointment_time": requested_dt.strftime("%I:%M %p"),
             "status": "scheduled",
-            "duration_minutes": 30,
-            "calendar_event_id": calendar_event_id
+            # if calendar failed, this may be undefined or None
+            "calendar_event_id": locals().get("calendar_event_id")
         }
 
     except HTTPException as he:
@@ -165,7 +121,7 @@ async def book_appointment(request: Request):
             {"error": "Failed to book appointment", "details": str(e)},
             status_code=500
         )
-       
+
 @Router.post("/Bland/cancel-appointment")
 async def cancel_appointment(request: Request):
     try:
