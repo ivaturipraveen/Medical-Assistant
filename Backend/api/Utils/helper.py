@@ -191,11 +191,11 @@ def create_calendar_event(doctor_calendar_id, patient_name, appointment_datetime
         'summary': f'Appointment with {patient_name}',
         'start': {
             'dateTime': appointment_datetime.isoformat(),
-            'timeZone': 'Asia/Kolkata',
+            'timeZone': 'UTC',
         },
         'end': {
             'dateTime': (appointment_datetime + timedelta(minutes=duration_minutes)).isoformat(),
-            'timeZone': 'Asia/Kolkata',
+            'timeZone': 'UTC',
         },
         'reminders': {
             'useDefault': False,
