@@ -9,6 +9,7 @@ app = FastAPI()
 
 origins = [
     "http://localhost:5173",
+    "https://medical-assistant-wsw6.onrender.com/",
 ]
 
 app.add_middleware(
