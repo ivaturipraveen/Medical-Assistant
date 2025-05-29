@@ -10,14 +10,20 @@ const DoctorSchedule = ({ doctor }) => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [currentMonth, setCurrentMonth] = useState(new Date());
+  const [initialLoadComplete, setInitialLoadComplete] = useState(false);
 
-  const fetchAppointmentsAndSlots = async (startDate, endDate) => {
+  const fetchAppointmentsAndSlots = async (startDate, endDate, isInitialLoad = false) => {
     try {
-      setLoading(true);
+      if (isInitialLoad) {
+        setLoading(true);
+      }
+      
+      const adjustedEndDate = new Date(endDate);
+      adjustedEndDate.setDate(adjustedEndDate.getDate() + 1);
       
       // Fetch booked appointments with date range
       const appointmentsResponse = await fetch(
-        `https://medical-assistant1.onrender.com/appointments?doctor_id=${doctor.id}&start_date=${startDate.toISOString()}&end_date=${endDate.toISOString()}`
+        `https://medical-assistant1.onrender.com/appointments?doctor_id=${doctor.id}&start_date=${startDate.toISOString()}&end_date=${adjustedEndDate.toISOString()}`
       );
       
       if (!appointmentsResponse.ok) {
@@ -25,28 +31,30 @@ const DoctorSchedule = ({ doctor }) => {
       }
       
       const appointmentsData = await appointmentsResponse.json();
-      console.log('Fetched appointments:', appointmentsData);
 
       if (appointmentsData.error) {
         throw new Error(appointmentsData.error);
       }
 
-      // Fetch available time slots
-      const timeSlotsResponse = await fetch('https://medical-assistant1.onrender.com/Bland/time-slot', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          d_name: doctor.name
-        })
-      });
+      // Only fetch time slots if they haven't been loaded yet
+      if (!availableSlots.length) {
+        const timeSlotsResponse = await fetch('https://medical-assistant1.onrender.com/Bland/time-slot', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            d_name: doctor.name
+          })
+        });
 
-      if (!timeSlotsResponse.ok) {
-        throw new Error(`Failed to fetch time slots: ${timeSlotsResponse.statusText}`);
+        if (!timeSlotsResponse.ok) {
+          throw new Error(`Failed to fetch time slots: ${timeSlotsResponse.statusText}`);
+        }
+
+        const timeSlotsData = await timeSlotsResponse.json();
+        setAvailableSlots(timeSlotsData.response || []);
       }
-
-      const timeSlotsData = await timeSlotsResponse.json();
 
       // Group appointments by date
       const appointmentsByDate = {};
@@ -71,32 +79,37 @@ const DoctorSchedule = ({ doctor }) => {
         });
       });
 
-      console.log('Appointments by date:', appointmentsByDate);
-      setAppointments(prevAppointments => ({
-        ...prevAppointments,
-        ...appointmentsByDate
-      }));
-      setAvailableSlots(timeSlotsData.response || []);
+      setAppointments(appointmentsByDate);
+      if (isInitialLoad) {
+        setInitialLoadComplete(true);
+      }
     } catch (err) {
       console.error('Error fetching data:', err);
       setError(err.message);
     } finally {
-      setLoading(false);
+      if (isInitialLoad) {
+        setLoading(false);
+      }
     }
   };
 
+  // Initial load effect
   useEffect(() => {
-    if (doctor?.id) {
-      // Calculate start and end dates for the current month view
+    if (doctor?.id && !initialLoadComplete) {
       const start = new Date(currentMonth.getFullYear(), currentMonth.getMonth(), 1);
       const end = new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 0);
-      
-      // Clear previous appointments when fetching new ones
-      setAppointments({});
-      
-      fetchAppointmentsAndSlots(start, end);
+      fetchAppointmentsAndSlots(start, end, true);
     }
-  }, [doctor?.id, currentMonth]);
+  }, [doctor?.id]);
+
+  // Month change effect
+  useEffect(() => {
+    if (doctor?.id && initialLoadComplete) {
+      const start = new Date(currentMonth.getFullYear(), currentMonth.getMonth(), 1);
+      const end = new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 0);
+      fetchAppointmentsAndSlots(start, end, false);
+    }
+  }, [currentMonth]);
 
   useEffect(() => {
     // Debug log when appointments or selected date changes
@@ -110,10 +123,18 @@ const DoctorSchedule = ({ doctor }) => {
 
   const handleDateChange = (date) => {
     setSelectedDate(date);
+    if (date.getMonth() !== currentMonth.getMonth() || 
+        date.getFullYear() !== currentMonth.getFullYear()) {
+      setCurrentMonth(date);
+    }
   };
 
   const handleMonthChange = (date) => {
     setCurrentMonth(date);
+    if (selectedDate.getMonth() !== date.getMonth() || 
+        selectedDate.getFullYear() !== date.getFullYear()) {
+      setSelectedDate(date);
+    }
   };
 
   // Helper function to check if a time slot is booked on the selected date
@@ -185,7 +206,7 @@ const DoctorSchedule = ({ doctor }) => {
     });
   };
 
-  if (loading) {
+  if (!initialLoadComplete && loading) {
     return <div className="loading-state">Loading schedule...</div>;
   }
 
@@ -217,6 +238,7 @@ const DoctorSchedule = ({ doctor }) => {
               ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'][date.getDay()]
             }
             formatDay={(locale, date) => date.getDate()}
+            view="month"
           />
         </div>
 

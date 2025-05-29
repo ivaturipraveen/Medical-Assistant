@@ -38,6 +38,7 @@ import './App.css';
 import DoctorPanel from './components/DoctorPanel/DoctorPanel';
 import AdminPanel from './components/AdminPanel/AdminPanel';
 import LoginPage from './components/LoginPage/LoginPage';
+import { FaUserMd } from 'react-icons/fa';
 
 ChartJS.register(
   CategoryScale,
@@ -264,7 +265,7 @@ export default function App() {
           
           <div className="doctor-profile-header">
             <div className="doctor-profile-avatar">
-              <User2 size={48} />
+              <FaUserMd size={32} />
             </div>
             <div className="doctor-profile-info">
               <h2>{doctor.name}</h2>
@@ -801,27 +802,11 @@ export default function App() {
             <div className="stat-content">
               <div className="stat-header">
                 <h3>Appointments</h3>
-                <div className="toggle-switch">
-                  <input
-                    type="checkbox"
-                    id="appointment-toggle"
-                    checked={showTodayAppointments}
-                    onChange={() => setShowTodayAppointments(!showTodayAppointments)}
-                  />
-                  <label htmlFor="appointment-toggle">
-                    <span className="toggle-label">
-                      {showTodayAppointments ? "Today's" : 'Total'}
-                    </span>
-                  </label>
-                </div>
               </div>
               <p className="stat-number">
                 {showTodayAppointments 
                   ? dashboardStats.todays_appointments 
                   : dashboardStats.total_appointments}
-              </p>
-              <p className="stat-label">
-                {showTodayAppointments ? "Today's Appointments" : 'Total Appointments'}
               </p>
             </div>
           </div>
@@ -995,8 +980,26 @@ export default function App() {
 
       const handleDateClick = (doctorName, dateStr, appointments) => {
         if (appointments && appointments.length > 0) {
+          // Add status based on date comparison
+          const today = new Date();
+          today.setHours(0, 0, 0, 0); // Reset time part for date comparison
+          const appointmentDate = new Date(dateStr);
+          appointmentDate.setHours(0, 0, 0, 0);
+
+          const appointmentsWithStatus = appointments.map(apt => {
+            let status;
+            if (appointmentDate < today) {
+              status = 'done';
+            } else if (appointmentDate.getTime() === today.getTime()) {
+              status = 'today';
+            } else {
+              status = 'upcoming';
+            }
+            return { ...apt, appointmentStatus: status };
+          });
+
           setSelectedViewDate(dateStr);
-          setSelectedDayAppointments(appointments);
+          setSelectedDayAppointments(appointmentsWithStatus);
         }
       };
 
@@ -1063,8 +1066,8 @@ export default function App() {
                         onClick={() => setExpandedDoctorId(expandedDoctorId === doctorName ? null : doctorName)}
                       >
                         <div className="doctor-info">
-                          <div className="doctor-avatar">
-                            <User2 size={24} />
+                          <div className="doctor-card-avatar">
+                            <FaUserMd size={24} />
                           </div>
                           <h4>Dr. {doctorName}</h4>
                         </div>
@@ -1103,19 +1106,18 @@ export default function App() {
                               .toISOString().split('T')[0];
                             const dayAppointments = dateAppointments[dateStr] || [];
                             const hasAppointments = dayAppointments.length > 0;
+                            const isToday = new Date().toLocaleDateString() === date.toLocaleDateString();
 
                             return (
                               <div 
                                 key={index} 
-                                className={`calendar-day ${hasAppointments ? 'has-appointments' : ''}`}
+                                className={`calendar-day ${isToday ? 'current-day' : ''} ${hasAppointments ? 'clickable' : ''}`}
                                 onClick={() => handleDateClick(doctorName, dateStr, dayAppointments)}
                               >
                                 <span className="day-number">{day}</span>
                                 {hasAppointments && (
                                   <div className="appointment-indicators">
-                                    {/* <div className="appointment-count-badge">
-                                      {dayAppointments.length}
-                                    </div> */}
+                                    <div className="appointment-dot"></div>
                                   </div>
                                 )}
                               </div>
@@ -1150,11 +1152,13 @@ export default function App() {
                         {selectedDayAppointments
                           .sort((a, b) => a.appointment_time.localeCompare(b.appointment_time))
                           .map((apt) => (
-                          <div key={apt.appointment_id} className={`appointment-item ${apt.status?.toLowerCase()}`}>
+                          <div key={apt.appointment_id} className={`appointment-item ${apt.status?.toLowerCase() || ''} ${apt.appointmentStatus}`}>
                             <div className="appointment-time">{apt.appointment_time}</div>
                             <div className="appointment-details">
                               <div className="patient-name">{apt.patient_name}</div>
-                              <div className="appointment-status">{apt.status}</div>
+                              <div className={`appointment-status ${apt.appointmentStatus}`}>
+                                {apt.appointmentStatus}
+                              </div>
                             </div>
                           </div>
                         ))}
@@ -1217,9 +1221,9 @@ export default function App() {
               {displayDoctors.map(doctor => (
                 <div key={doctor.id} className="doctor-card">
                   <div className="doctor-info">
-                    <div className="doctor-avatar">
-                      <User2 size={32} />
-            </div>
+                    <div className="doctor-card-avatar">
+                      <FaUserMd size={24} />
+                    </div>
                     <div className="doctor-details">
                       <h3 className="doctor-name">{doctor.name}</h3>
                       <p className="doctor-department">{doctor.department}</p>
@@ -1321,13 +1325,13 @@ export default function App() {
                           <td>{patient.dob}</td>
                           <td>{patient.phone_number}</td>
                           <td>
-                        <span className={`department-badge ${patient.department === 'Not assigned' ? 'not-assigned' : ''}`}>
-                          {patient.department}
+                            <span className={`department-badge ${patient.department?.toLowerCase() === 'temp' ? 'registered' : patient.department === 'Not assigned' ? 'not-assigned' : ''}`}>
+                              {patient.department?.toLowerCase() === 'temp' ? 'Registered' : patient.department}
                             </span>
                           </td>
                           <td>
-                        <span className={`status-badge ${patient.status?.toLowerCase() || 'active'}`}>
-                          {patient.status || 'Active'}
+                            <span className={`status-badge ${patient.status?.toLowerCase() || 'active'}`}>
+                              {patient.status || 'Active'}
                             </span>
                           </td>
                         </tr>
@@ -1395,7 +1399,7 @@ export default function App() {
             {dropdownOpen && (
               <div className="dropdown-menu">
                 <div className="user-info">
-                  <span>{userRole === 'admin' ? 'Administrator' : `Dr. ${loggedInUser?.name}`}</span>
+                  <span>{userRole === 'admin' ? 'Administrator' : `${loggedInUser?.name}`}</span>
                 </div>
                 <div className="dropdown-item" onClick={handleLogout}>
                   <LogOut size={16} />

@@ -1,8 +1,7 @@
 .doctor-dashboard {
   padding: 24px;
   background: white;
-  border-radius: 12px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  border: none;
 }
 
 .content-title {
@@ -25,7 +24,7 @@
   display: flex;
   align-items: center;
   gap: 16px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  border: 1px solid #e2e8f0;
 }
 
 .stat-icon {
@@ -37,26 +36,47 @@
   background: #f0f9ff;
   border-radius: 12px;
   color: #0284c7;
+  flex-shrink: 0;
+}
+
+.stat-content {
+  display: flex;
+  align-items: center;
+  gap: 30px;
+  flex-grow: 1;
 }
 
 .stat-content h3 {
   color: #64748b;
-  font-size: 0.875rem;
+  font-size: 1.25rem !important;
   font-weight: 500;
-  margin-bottom: 4px;
+  margin: 0;
+  white-space: nowrap;
 }
 
-.stat-number {
-  color: #1e293b;
+.doctor-dashboard .stat-card .stat-content .stat-number {
+  color: #ffffff !important;
   font-size: 1.5rem;
   font-weight: 600;
+  margin: 0;
+  background-color: #0C8990;
+  width: 45px;
+  height: 45px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.2s ease;
+}
+
+.doctor-dashboard .stat-card .stat-content .stat-number:hover {
+  transform: scale(1.05);
 }
 
 .schedule-container {
   background: white;
   border-radius: 12px;
   padding: 24px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 }
 
 .schedule-content {

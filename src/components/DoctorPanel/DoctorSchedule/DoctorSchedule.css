@@ -2,7 +2,6 @@
   padding: 20px;
   background-color: #fff;
   border-radius: 8px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
   width: 100%;
 }
 
@@ -18,7 +17,6 @@
   background: #fff;
   border-radius: 12px;
   padding: 24px;
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
   min-width: 400px;
   height: fit-content;
   border: 2px solid #0C8990;
@@ -41,7 +39,6 @@
   border-radius: 12px;
   padding: 24px;
   line-height: 1.25em;
-  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.08);
 }
 
 .react-calendar__navigation {
@@ -217,7 +214,7 @@
   background: #fff;
   border-radius: 8px;
   padding: 24px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+  border:none;
 }
 
 .schedule-details h3 {
@@ -278,7 +275,7 @@
   align-items: center;
   gap: 16px;
   padding-left: 16px;
-  border-left: 2px solid #d22533;
+  /* border-left: 2px solid #d22533; */
 }
 
 .patient-avatar {
