@@ -17,7 +17,7 @@ const DoctorSchedule = ({ doctor }) => {
         
         // Fetch booked appointments
         const appointmentsResponse = await fetch(
-          `http://localhost:8000/appointments?doctor_id=${doctor.id}`
+          `https://medical-assistant1.onrender.com/appointments?doctor_id=${doctor.id}`
         );
         
         if (!appointmentsResponse.ok) {
@@ -30,7 +30,7 @@ const DoctorSchedule = ({ doctor }) => {
         }
 
         // Fetch available time slots
-        const timeSlotsResponse = await fetch('http://localhost:8000/time-slot', {
+        const timeSlotsResponse = await fetch('https://medical-assistant1.onrender.com/time-slot', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',

@@ -20,7 +20,7 @@ const DoctorDashboard = ({ doctor }) => {
           throw new Error('Doctor ID is not available');
         }
 
-        const response = await fetch(`http://localhost:8000/appointments?doctor_id=${doctor.id}`);
+        const response = await fetch(`https://medical-assistant1.onrender.com/appointments?doctor_id=${doctor.id}`);
         if (!response.ok) {
           throw new Error(`Failed to fetch appointments: ${response.statusText}`);
         }
