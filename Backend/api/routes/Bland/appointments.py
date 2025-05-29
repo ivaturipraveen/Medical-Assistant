@@ -14,65 +14,98 @@ async def book_appointment(request: Request):
     try:
         body       = await request.json()
         raw_dname  = body["dname"]
-        raw_date   = body.get("date")
-        raw_slot   = body["sslot"]
+        raw_date   = body.get("date")      # e.g. "2025-05-31"
+        raw_slot   = body["sslot"]         # e.g. "4pm" or "4:00 PM"
         patient_id = body["pid"]
         raw_phone  = body.get("phone", "")
 
+        # — Normalize phone, parse date & time —
         phone = format_phone(raw_phone)
-
-        # parse date/time as before…
         parsed_date = parse_date(raw_date) if raw_date else date.today()
         parsed_time = parse_time_input(raw_slot)
         requested_dt = datetime.combine(parsed_date, parsed_time)
 
-        # find doctor…
-        canonical_name, _, _ = find_doctor_by_name(cursor, raw_dname)
-        cursor.execute("SELECT id, max_patients, email FROM doctors WHERE name = %s",
-                       (canonical_name,))
-        doctor_id, max_patients, doctor_calendar_id = cursor.fetchone()
+        # — Fuzzy‐find doctor & load DB record —
+        result = find_doctor_by_name(cursor, raw_dname)
+        if not result:
+            raise HTTPException(404, f"No doctor matching '{raw_dname}'")
+        matched_name, _, _ = result
+
+        cursor.execute(
+            "SELECT id, max_patients, email FROM doctors WHERE LOWER(name) = %s",
+            (matched_name.lower(),)
+        )
+        row = cursor.fetchone()
+        if not row:
+            raise HTTPException(404, f"Dr. {matched_name} not found in DB")
+        doctor_id, max_patients, doctor_calendar_id = row
 
         if max_patients <= 0:
-            return JSONResponse({"detail": f"No slots left"}, status_code=409)
+            return JSONResponse(
+                {"detail": f"No available slots for Dr. {matched_name}."},
+                status_code=409
+            )
 
-        # — 1) Upsert the appointment in the DB first —
-        cursor.execute("SELECT id, calendar_event_id FROM appointments WHERE patient_id = %s",
-                       (patient_id,))
+        # — Check for existing appointment —
+        cursor.execute(
+            "SELECT id, doctor_id, calendar_event_id FROM appointments WHERE patient_id = %s",
+            (patient_id,)
+        )
         existing = cursor.fetchone()
 
         if existing:
-            apt_id, old_event_id = existing
-            cursor.execute("""
+            apt_id, old_doctor_id, old_event_id = existing
+
+            # 1) Give back a slot to the old doctor
+            cursor.execute(
+                "UPDATE doctors SET max_patients = max_patients + 1 WHERE id = %s",
+                (old_doctor_id,)
+            )
+
+            # 2) Update the appointment record
+            cursor.execute(
+                """
                 UPDATE appointments
                    SET doctor_id        = %s,
                        appointment_time = %s,
                        status           = %s
                  WHERE id = %s
                 RETURNING id
-            """, (doctor_id, requested_dt, "scheduled", apt_id))
+                """,
+                (doctor_id, requested_dt, "scheduled", apt_id)
+            )
             appointment_id = cursor.fetchone()[0]
             message = "Appointment rescheduled."
         else:
-            cursor.execute("""
+            # 1) Insert new appointment
+            cursor.execute(
+                """
                 INSERT INTO appointments
-                    (patient_id, doctor_id, appointment_time, status, duration, calendar_event_id)
+                  (patient_id, doctor_id, appointment_time, status, duration, calendar_event_id)
                 VALUES (%s, %s, %s, %s, %s, %s)
                 RETURNING id
-            """, (patient_id, doctor_id, requested_dt, "scheduled", 30, None))
+                """,
+                (patient_id, doctor_id, requested_dt, "scheduled", 30, None)
+            )
             appointment_id = cursor.fetchone()[0]
-            message = "Appointment booked."
+            message = "New appointment booked."
 
-        # update patient phone & doctor
-        cursor.execute("""
-            UPDATE patients
-               SET phone_number = %s,
-                   doctor_id    = %s
-             WHERE id = %s
-        """, (phone, doctor_id, patient_id))
+        # — Always update patient contact & assigned doctor —
+        cursor.execute(
+            "UPDATE patients SET phone_number = %s, doctor_id = %s WHERE id = %s",
+            (phone, doctor_id, patient_id)
+        )
 
+        # — Finally, take one slot from the new doctor —
+        cursor.execute(
+            "UPDATE doctors SET max_patients = max_patients - 1 WHERE id = %s",
+            (doctor_id,)
+        )
+
+        # — Commit all booking-related DB changes —
         conn.commit()
 
-        # — 2) THEN try the calendar integration, but don’t fail if it errors —
+        # — Calendar integration (best-effort) —
         try:
             if existing:
                 calendar_event_id = update_calendar_event(
@@ -83,37 +116,45 @@ async def book_appointment(request: Request):
                     duration_minutes=30
                 )
             else:
+                # fetch patient name for summary
+                cursor.execute("SELECT full_name FROM patients WHERE id = %s", (patient_id,))
+                patient_name = cursor.fetchone()[0]
+
                 calendar_event_id = create_calendar_event(
                     doctor_calendar_id,
-                    patient_name=f"patient {patient_id}",
-                    appointment_datetime=requested_dt,
+                    patient_name,
+                    requested_dt,
                     duration_minutes=30
                 )
-                # store it back in DB
+
+                # store the new event ID
                 cursor.execute(
                     "UPDATE appointments SET calendar_event_id = %s WHERE id = %s",
                     (calendar_event_id, appointment_id)
                 )
                 conn.commit()
+
         except Exception as cal_err:
-            # log it, but do not fail the API call
-            print("⚠️ Calendar error, booking still succeeded:", cal_err)
+            print("⚠️ Calendar error (booking persisted):", cal_err)
+            calendar_event_id = None
 
         return {
             "message": message,
             "appointment_id": appointment_id,
-            "doctor_name": canonical_name,
+            "doctor_name": matched_name,
             "patient_id": patient_id,
             "appointment_date": requested_dt.strftime("%Y-%m-%d"),
             "appointment_time": requested_dt.strftime("%I:%M %p"),
             "status": "scheduled",
-            # if calendar failed, this may be undefined or None
-            "calendar_event_id": locals().get("calendar_event_id")
+            "duration_minutes": 30,
+            "remaining_slots": max_patients - 1,
+            "calendar_event_id": calendar_event_id
         }
 
     except HTTPException as he:
         conn.rollback()
         return JSONResponse({"detail": he.detail}, status_code=he.status_code)
+
     except Exception as e:
         conn.rollback()
         print("❌ Error booking appointment:", e)
