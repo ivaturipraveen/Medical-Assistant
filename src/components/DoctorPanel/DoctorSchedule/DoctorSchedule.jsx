@@ -30,7 +30,7 @@ const DoctorSchedule = ({ doctor }) => {
         }
 
         // Fetch available time slots
-        const timeSlotsResponse = await fetch('https://medical-assistant1.onrender.com/time-slot', {
+        const timeSlotsResponse = await fetch('https://medical-assistant1.onrender.com/Bland/time-slot', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
