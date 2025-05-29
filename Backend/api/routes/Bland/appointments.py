@@ -4,7 +4,7 @@ from api.Utils.helper import create_calendar_event,update_calendar_event
 import traceback
 from database import conn,cursor
 
-from datetime import datetime,date, timedelta
+from datetime import datetime,date
 
 
 Router=APIRouter()
@@ -259,6 +259,7 @@ async def get_appointment(request: Request):
             return JSONResponse({"error": "pid is required"}, status_code=422)
 
         # Join appointments → doctors to fetch everything in one query
+        cursor = conn.cursor()  # Safe pattern: fresh cursor per request
         cursor.execute("""
             SELECT
                 a.id,
@@ -272,6 +273,7 @@ async def get_appointment(request: Request):
         """, (patient_id,))
 
         rows = cursor.fetchall()
+        cursor.close()
 
         if not rows:
             return JSONResponse(
@@ -280,14 +282,17 @@ async def get_appointment(request: Request):
                     "appointment_id": None,
                     "doctor_name": None,
                     "department": None,
-                    "appointment_time": None
+                    "Sdate": None,
+                    "Stime": None
                 },
                 status_code=200
             )
 
-        # If there are multiple appointments, take the most recent one
-        latest_appt = rows[-1]
-        appt_id, doctor_name, department, appt_time = latest_appt
+        # Take the latest appointment
+        appt_id, doctor_name, department, appt_time = rows[-1]
+
+        sdate = appt_time.strftime("%Y-%m-%d")      # Example: "2025-06-01"
+        stime = appt_time.strftime("%I:%M %p")       # Example: "03:45 PM"
 
         return JSONResponse(
             {
@@ -295,7 +300,8 @@ async def get_appointment(request: Request):
                 "appointment_id": appt_id,
                 "doctor_name": doctor_name,
                 "department": department,
-                "appointment_time": appt_time.strftime("%Y-%m-%d %I:%M %p")
+                "Sdate": sdate,
+                "Stime": stime
             },
             status_code=200
         )
