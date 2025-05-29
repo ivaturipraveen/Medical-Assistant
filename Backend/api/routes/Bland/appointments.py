@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Request,HTTPException
 from fastapi.responses import JSONResponse
 from api.Utils.helper import create_calendar_event,update_calendar_event,format_phone,parse_date,parse_time_input,find_doctor_by_name
-import traceback
+from Google_calender import calendar_service
 from database import conn,cursor
 
 from datetime import datetime,date
@@ -163,96 +163,6 @@ async def book_appointment(request: Request):
             status_code=500
         )
 
-@Router.post("/Bland/cancel-appointment")
-async def cancel_appointment(request: Request):
-    try:
-        body = await request.json()
-        doctor_name = body.get("doctor_name", "").strip()
-        department = body.get("department", "").strip()
-        appointment_time = body.get("appointment_time", "").strip()
-        patient_id = body.get("pid")
-
-        if not all([doctor_name, department, appointment_time, patient_id]):
-            return JSONResponse(
-                {"error": "doctor_name, department, appointment_time, and pid are required"},
-                status_code=422
-            )
-
-        # Parse the appointment time
-        try:
-            appt_datetime = datetime.strptime(appointment_time, "%Y-%m-%d %I:%M %p")
-        except ValueError:
-            return JSONResponse(
-                {"error": "Invalid appointment time format. Use format: YYYY-MM-DD HH:MM AM/PM"},
-                status_code=422
-            )
-
-        # First find the doctor ID
-        cursor.execute("""
-            SELECT id FROM doctors 
-            WHERE LOWER(name) = LOWER(%s) AND LOWER(department) = LOWER(%s)
-        """, (doctor_name, department))
-        
-        doctor_row = cursor.fetchone()
-        if not doctor_row:
-            return JSONResponse(
-                {"error": "Doctor not found with the specified name and department"},
-                status_code=404
-            )
-        doctor_id = doctor_row[0]
-
-        # Verify the appointment exists
-        cursor.execute("""
-            SELECT id FROM appointments 
-            WHERE patient_id = %s 
-            AND doctor_id = %s 
-            AND appointment_time = %s
-        """, (patient_id, doctor_id, appt_datetime))
-        
-        appointment_row = cursor.fetchone()
-        if not appointment_row:
-            return JSONResponse(
-                {"error": "Appointment not found with the specified details"},
-                status_code=404
-            )
-        appointment_id = appointment_row[0]
-
-        # Delete the appointment
-        cursor.execute("DELETE FROM appointments WHERE id = %s", (appointment_id,))
-
-        # Increment the doctor's max_patients count
-        cursor.execute("""
-            UPDATE doctors 
-            SET max_patients = max_patients + 1 
-            WHERE id = %s
-        """, (doctor_id,))
-
-        # Update patient's doctor_id to 0 instead of NULL
-        cursor.execute("""
-            UPDATE patients 
-            SET doctor_id = 0 
-            WHERE id = %s
-        """, (patient_id,))
-
-        conn.commit()
-
-        return JSONResponse({
-            "message": "Appointment cancelled successfully",
-            "appointment_id": appointment_id,
-            "doctor_name": doctor_name,
-            "department": department,
-            "appointment_time": appointment_time
-        }, status_code=200)
-
-    except Exception as e:
-        print("❌ Error cancelling appointment:", e)
-        if conn:
-            conn.rollback()
-        return JSONResponse(
-            {"error": "Failed to cancel appointment", "details": str(e)},
-            status_code=500
-        )
-
 @Router.post("/Bland/get-appointment")
 async def get_appointment(request: Request):
     try:
@@ -313,5 +223,107 @@ async def get_appointment(request: Request):
         print("❌ Error fetching appointments:", e)
         return JSONResponse(
             {"error": "Server error", "details": str(e)},
+            status_code=500
+        )
+
+@Router.post("/Bland/cancel-appointment")
+async def cancel_appointment(request: Request):
+    try:
+        body = await request.json()
+        doctor_name = body.get("doctor_name", "").strip()
+        department  = body.get("department", "").strip()
+        raw_date    = body.get("date", "").strip()
+        raw_time    = body.get("time", "").strip()
+        patient_id  = body.get("pid")
+        result = find_doctor_by_name(cursor, doctor_name)
+        if not result:
+            raise HTTPException(404, f"No doctor matching '{doctor_name}'")
+        doctor_name, _, _ = result
+
+
+        if not all([doctor_name, department, raw_date, raw_time, patient_id]):
+            return JSONResponse(
+                {"error": "doctor_name, department, date, time, and pid are required"},
+                status_code=422
+            )
+
+        # Parse date and time
+        parsed_date = parse_date(raw_date)
+        if not parsed_date:
+            return JSONResponse({"error": "Invalid date format."}, status_code=422)
+
+        try:
+            parsed_time = parse_time_input(raw_time)
+        except ValueError as ve:
+            return JSONResponse({"error": str(ve)}, status_code=422)
+
+        appt_datetime = datetime.combine(parsed_date, parsed_time)
+
+        # Get doctor ID and calendar ID
+        cursor.execute("""
+            SELECT id, email 
+            FROM doctors 
+            WHERE LOWER(name) = LOWER(%s) AND LOWER(department) = LOWER(%s)
+        """, (doctor_name, department))
+        doc_row = cursor.fetchone()
+        if not doc_row:
+            return JSONResponse({"error": "Doctor not found"}, status_code=404)
+        doctor_id, doctor_calendar_id = doc_row
+
+        # Get appointment info
+        cursor.execute("""
+            SELECT id, calendar_event_id 
+            FROM appointments 
+            WHERE patient_id = %s AND doctor_id = %s AND appointment_time = %s
+        """, (patient_id, doctor_id, appt_datetime))
+        appt_row = cursor.fetchone()
+        if not appt_row:
+            return JSONResponse({"error": "Appointment not found","name":doctor_name}, status_code=404)
+        appointment_id, calendar_event_id = appt_row
+
+        # Delete appointment
+        cursor.execute("DELETE FROM appointments WHERE id = %s", (appointment_id,))
+
+        # Increment doctor's max_patients
+        cursor.execute("""
+            UPDATE doctors 
+            SET max_patients = max_patients + 1 
+            WHERE id = %s
+        """, (doctor_id,))
+
+        # Set patient’s doctor_id = 0
+        cursor.execute("""
+            UPDATE patients 
+            SET doctor_id = 0 
+            WHERE id = %s
+        """, (patient_id,))
+
+        # Try to delete the calendar event
+        try:
+            if calendar_event_id:
+                calendar_service.events().delete(
+                    calendarId=doctor_calendar_id,
+                    eventId=calendar_event_id
+                ).execute()
+        except Exception as cal_err:
+            print("⚠️ Failed to delete calendar event:", cal_err)
+
+        conn.commit()
+
+        return JSONResponse({
+            "message": "Appointment cancelled successfully",
+            "appointment_id": appointment_id,
+            "doctor_name": doctor_name,
+            "department": department,
+            "date": raw_date,
+            "time": raw_time
+        }, status_code=200)
+
+    except Exception as e:
+        print("❌ Error cancelling appointment:", e)
+        if conn:
+            conn.rollback()
+        return JSONResponse(
+            {"error": "Failed to cancel appointment", "details": str(e)},
             status_code=500
         )
