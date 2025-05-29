@@ -368,7 +368,7 @@ export default function App() {
         setErrors(prev => ({ ...prev, doctors: null }));
         
         try {
-          const data = await fetchWithRetry('https://medical-assistant-wsw6.onrender.com/doctors');
+          const data = await fetchWithRetry('https://medical-assistant1.onrender.com/doctors');
           // Filter out temp doctors
           const filteredDoctors = (data.doctors || []).filter(doctor => 
             !doctor.department.toLowerCase().includes('temp') && 
@@ -390,7 +390,7 @@ export default function App() {
       const fetchDepartments = async () => {
         setLoadingDepartments(true);
         try {
-          const response = await fetchWithRetry('https://medical-assistant-wsw6.onrender.com/categories');
+          const response = await fetchWithRetry('https://medical-assistant1.onrender.com/categories');
           if (response.categories) {
             // Filter out temp departments
             const filteredDepartments = response.categories.filter(dept => 
@@ -416,7 +416,7 @@ export default function App() {
         setErrors(prev => ({ ...prev, patients: null }));
 
         try {
-          const data = await fetchWithRetry('https://medical-assistant-wsw6.onrender.com/patients');
+          const data = await fetchWithRetry('https://medical-assistant1.onrender.com/patients');
           setPatients(data.patients || []);
         } catch (error) {
           console.error('Error loading patients:', error);
@@ -437,7 +437,7 @@ export default function App() {
     }
 
     setLoading(prev => ({ ...prev, appointments: true }));
-    fetch(`https://medical-assistant-wsw6.onrender.com/appointments?doctor_id=${selectedDoctor}`)
+    fetch(`https://medical-assistant1.onrender.com/appointments?doctor_id=${selectedDoctor}`)
       .then(res => res.json())
       .then(data => setAppointments(data.appointments))
       .catch(() => setError('Failed to load appointments.'))
@@ -454,7 +454,7 @@ export default function App() {
     // Fetch patients count
     const fetchPatientsCount = async () => {
       try {
-        const data = await fetchWithRetry('https://medical-assistant-wsw6.onrender.com/patients/count');
+        const data = await fetchWithRetry('https://medical-assistant1.onrender.com/patients/count');
         setPatientsCount(data.patients_count);
       } catch (error) {
         console.error('Error loading patients count:', error);
@@ -504,7 +504,7 @@ export default function App() {
       const fetchDashboardStats = async () => {
         setLoadingStats(true);
         try {
-          const data = await fetchWithRetry('https://medical-assistant-wsw6.onrender.com/dashboard/stats');
+          const data = await fetchWithRetry('https://medical-assistant1.onrender.com/dashboard/stats');
           setDashboardStats(data.stats);
         } catch (error) {
           console.error('Error loading dashboard stats:', error);
@@ -536,10 +536,10 @@ export default function App() {
             workloadRes,
             ageRes
           ] = await Promise.all([
-            fetchWithRetry('https://medical-assistant-wsw6.onrender.com/dashboard/appointments-by-department'),
-            fetchWithRetry('https://medical-assistant-wsw6.onrender.com/dashboard/weekly-distribution'),
-            fetchWithRetry('https://medical-assistant-wsw6.onrender.com/dashboard/doctor-workload'),
-            fetchWithRetry('https://medical-assistant-wsw6.onrender.com/dashboard/age-distribution'),
+            fetchWithRetry('https://medical-assistant1.onrender.com/dashboard/appointments-by-department'),
+            fetchWithRetry('https://medical-assistant1.onrender.com/dashboard/weekly-distribution'),
+            fetchWithRetry('https://medical-assistant1.onrender.com/dashboard/doctor-workload'),
+            fetchWithRetry('https://medical-assistant1.onrender.com/dashboard/age-distribution'),
           ]);
 
           setDashboardData({
@@ -592,7 +592,7 @@ export default function App() {
     const fetchAllAppointments = async () => {
       setLoadingAllAppointments(true);
       try {
-        const response = await fetchWithRetry('https://medical-assistant-wsw6.onrender.com/appointments');
+        const response = await fetchWithRetry('https://medical-assistant1.onrender.com/appointments');
         setAllAppointments(response.appointments || []);
       } catch (error) {
         console.error('Error fetching appointments:', error);
@@ -656,7 +656,7 @@ export default function App() {
   useEffect(() => {
     const fetchDoctors = async () => {
       try {
-        const response = await fetch('https://medical-assistant-wsw6.onrender.com/doctors');
+        const response = await fetch('https://medical-assistant1.onrender.com/doctors');
         const data = await response.json();
         console.log('Raw doctors data:', data.doctors);
         if (data.doctors) {
