@@ -15,7 +15,7 @@ const LoginPage = ({ onLogin }) => {
     // Fetch doctors list when component mounts
     const fetchDoctors = async () => {
       try {
-        const response = await fetch('http://localhost:8000/doctors');
+        const response = await fetch('https://medical-assistant1.onrender.com/doctors');
         const data = await response.json();
         if (data.doctors) {
           const processedDoctors = data.doctors.map(doctor => {
