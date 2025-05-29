@@ -21,7 +21,7 @@
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
   min-width: 400px;
   height: fit-content;
-  border: 2px solid #000000;
+  border: 2px solid #0C8990;
 }
 
 /* Calendar customization */
@@ -178,11 +178,11 @@
 
 .calendar-tile:enabled:hover {
   background-color: #e6f3ff;
-  border-color: #1a73e8;
+  border-color: #0C8990;
 }
 
 .calendar-tile.has-appointments {
-  color: #1a73e8;
+  color: #0C8990;
   font-weight: 600;
 }
 
@@ -194,18 +194,18 @@
   transform: translateX(-50%);
   width: 6px;
   height: 6px;
-  background-color: #1a73e8;
+  background-color: #0C8990;
   border-radius: 50%;
 }
 
 .react-calendar__tile--now {
   background: #e6f3ff !important;
-  color: #1a73e8 !important;
+  color: #0C8990 !important;
   font-weight: bold;
 }
 
 .react-calendar__tile--active {
-  background: #1a73e8 !important;
+  background: #0C8990 !important;
   color: white !important;
 }
 
@@ -248,14 +248,14 @@
 }
 
 .time-slot.available {
-  border-left: 8px solid #48bb78;
+  border-left: 8px solid #0C8990;
   transform: translateY(0);
 }
 
 .time-slot.booked {
-  border-left: 8px solid #0C8990;
+  border-left: 8px solid #c82020;
   background: #ffffff;
-  box-shadow: 0 8px 15px rgba(12, 137, 144, 0.15);
+  box-shadow: 0 8px 15px rgba(144, 12, 49, 0.15);
   transform: translateY(-2px);
 }
 
@@ -278,7 +278,7 @@
   align-items: center;
   gap: 16px;
   padding-left: 16px;
-  border-left: 2px solid #e2e8f0;
+  border-left: 2px solid #d22533;
 }
 
 .patient-avatar {
@@ -287,7 +287,7 @@
   justify-content: center;
   width: 40px;
   height: 40px;
-  background: #0C8990;
+  background: #d20e0e;
   border-radius: 50%;
   color: #ffffff;
 }
@@ -314,7 +314,7 @@
 
 .status-badge.scheduled {
   background: #e6fffa;
-  color: #0C8990;
+  color:#c82020;
 }
 
 .status-badge.completed {

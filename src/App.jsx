@@ -1003,8 +1003,7 @@ export default function App() {
       return (
         <div className="appointments-view">
           <div className="appointments-header">
-            <h2 className="content-title">Appointments by Department</h2>
-            {selectedDepartment && (
+          {selectedDepartment && (
               <button 
                 className="back-button"
                 onClick={() => setSelectedDepartment('')}
@@ -1013,6 +1012,8 @@ export default function App() {
                 <ArrowLeft size={20} />
               </button>
             )}
+            <h2 className="content-title">Appointments by Department</h2>
+            
           </div>
 
           {error && <div className="error-alert">{error}</div>}
@@ -1112,9 +1113,9 @@ export default function App() {
                                 <span className="day-number">{day}</span>
                                 {hasAppointments && (
                                   <div className="appointment-indicators">
-                                    <div className="appointment-count-badge">
+                                    {/* <div className="appointment-count-badge">
                                       {dayAppointments.length}
-                                    </div>
+                                    </div> */}
                                   </div>
                                 )}
                               </div>
@@ -1377,7 +1378,9 @@ export default function App() {
         <div className="header-left">
           <Stethoscope className="icon-header" size={33} />
           <h1 className="main-title">
-            {userRole === 'admin' ? 'Medical Appointment Dashboard' : 'Doctor Portal'}
+          {userRole === 'admin' 
+  ? 'Medical Appointment Dashboard' 
+  : `Welcome, ${loggedInUser?.name}`}
           </h1>
         </div>
         <div className="header-right">

@@ -26,8 +26,7 @@ const DoctorPanel = ({ doctor }) => {
             <User2 size={40} />
           </div>
           <div className="welcome-text">
-            <h1>{greeting}, Dr. {doctorName}</h1>
-            <p className="welcome-subtitle">Welcome to your medical dashboard</p>
+            <h1>{greeting}</h1>
           </div>
         </div>
         <div className="quick-info">
