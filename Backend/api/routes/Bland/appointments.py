@@ -24,28 +24,23 @@ async def book_appointment(request: Request):
         parsed_date = parse_date(raw_date) if raw_date else date.today()
         parsed_time = parse_time_input(raw_slot)
         requested_dt = datetime.combine(parsed_date, parsed_time)
-        day_of_week = requested_dt.strftime("%A")
 
-        # — Fuzzy‐find doctor & load DB record —
+        # — Find doctor —
         result = find_doctor_by_name(cursor, raw_dname)
         if not result:
             raise HTTPException(404, f"No doctor matching '{raw_dname}'")
         matched_name, _, _ = result
 
-        # Check if doctor is available at the requested time
+        # Get doctor ID and email
         cursor.execute("""
-            SELECT d.id, d.email 
-            FROM doctors d
-            JOIN doctor_availability da ON d.id = da.doctor_id
-            WHERE LOWER(d.name) = %s 
-            AND da.day_of_week = %s
-            AND da.time_slot = %s
-            AND da.is_available = true;
-        """, (matched_name.lower(), day_of_week, parsed_time.strftime("%H:%M:%S")))
+            SELECT id, email 
+            FROM doctors 
+            WHERE LOWER(name) = %s
+        """, (matched_name.lower(),))
         
         row = cursor.fetchone()
         if not row:
-            raise HTTPException(404, f"Dr. {matched_name} is not available at the requested time")
+            raise HTTPException(404, f"Doctor {matched_name} not found")
         
         doctor_id, doctor_email = row
 
@@ -91,20 +86,11 @@ async def book_appointment(request: Request):
             appointment_id = cursor.fetchone()[0]
             message = "New appointment booked."
 
-        # — Always update patient contact & assigned doctor —
+        # — Update patient contact & assigned doctor —
         cursor.execute(
             "UPDATE patients SET phone_number = %s, doctor_id = %s WHERE id = %s",
             (phone, doctor_id, patient_id)
         )
-
-        # — Mark the time slot as unavailable —
-        cursor.execute("""
-            UPDATE doctor_availability 
-            SET is_available = false 
-            WHERE doctor_id = %s 
-            AND day_of_week = %s 
-            AND time_slot = %s
-        """, (doctor_id, day_of_week, parsed_time.strftime("%H:%M:%S")))
 
         # — Commit all booking-related DB changes —
         conn.commit()
@@ -114,7 +100,7 @@ async def book_appointment(request: Request):
             if existing:
                 calendar_event_id = update_calendar_event(
                     event_id=old_event_id,
-                    calendar_id=old_doctor_email,  # Use old doctor's email for updating
+                    calendar_id=old_doctor_email,
                     title=f"Appointment with patient {patient_id}",
                     new_datetime=requested_dt,
                     duration_minutes=30
