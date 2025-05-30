@@ -7,46 +7,70 @@ Router=APIRouter()
 
 @Router.get('/categories')
 def get_categories():
-    cursor = conn.cursor()
     cursor.execute("SELECT DISTINCT department FROM doctors;")
     cats = [row[0] for row in cursor.fetchall()]
     return {'categories': cats}
 
-
-# 2. Doctors endpoint
 @Router.get('/doctors')
 async def get_doctors():
     try:
-        print("Executing doctors query...")
         cursor.execute("""
             SELECT 
                 id, 
                 name, 
-                department
+                department, 
+                email
             FROM doctors 
             ORDER BY department, name;
         """)
         rows = cursor.fetchall()
-        print(f"Found {len(rows)} doctors")
-
         return {
             'doctors': [
                 {
                     'id': row[0],
                     'name': row[1],
-                    'department': row[2]
-                }
-                for row in rows
+                    'department': row[2],
+                    'email': row[3]
+                } for row in rows
             ]
         }
     except Exception as e:
-        print("Error fetching doctors:", str(e))
-        return JSONResponse(
-            content={"error": f"Failed to fetch doctors: {str(e)}"},
-            status_code=500
-        )
+        return JSONResponse(content={"error": str(e)}, status_code=500)
 
-@Router.get("/patients/count")
+@Router.get('/doctors/{doctor_id}/availability')
+async def get_doctor_availability(doctor_id: int):
+    try:
+        cursor.execute("""
+            SELECT 
+                day_of_week, 
+                time_slot, 
+                is_available
+            FROM doctor_availability
+            WHERE doctor_id = %s
+            ORDER BY 
+                CASE 
+                    WHEN day_of_week = 'Monday' THEN 1
+                    WHEN day_of_week = 'Tuesday' THEN 2
+                    WHEN day_of_week = 'Wednesday' THEN 3
+                    WHEN day_of_week = 'Thursday' THEN 4
+                    WHEN day_of_week = 'Friday' THEN 5
+                    WHEN day_of_week = 'Saturday' THEN 6
+                    WHEN day_of_week = 'Sunday' THEN 7
+                END,
+                time_slot;
+        """, (doctor_id,))
+        rows = cursor.fetchall()
+        availability = {}
+        for day, time_slot, is_available in rows:
+            if day not in availability:
+                availability[day] = []
+            if is_available:
+                availability[day].append(time_slot.strftime('%I:%M %p'))
+        return {"availability": availability}
+    except Exception as e:
+        return JSONResponse(content={"error": str(e)}, status_code=500)
+
+@Router.get('/patients/count')
 async def get_patients_count():
     try:
         cursor.execute("SELECT COUNT(*) FROM patients;")
@@ -59,15 +83,17 @@ async def get_patients_count():
 async def get_appointments(doctor_id: int = None):
     try:
         if doctor_id:
-            # If doctor_id is provided, filter by it
             cursor.execute("""
                 SELECT
                     a.id,
                     a.appointment_time,
                     a.patient_id,
-                    p.full_name as patient_name,
-                    d.name as doctor_name,
-                    d.department
+                    p.full_name,
+                    d.name,
+                    d.department,
+                    a.status,
+                    a.duration,
+                    a.calendar_event_id
                 FROM appointments a
                 JOIN patients p ON a.patient_id = p.id
                 JOIN doctors d ON a.doctor_id = d.id
@@ -75,23 +101,23 @@ async def get_appointments(doctor_id: int = None):
                 ORDER BY a.appointment_time;
             """, (doctor_id,))
         else:
-            # If no doctor_id, fetch all appointments
             cursor.execute("""
                 SELECT
                     a.id,
                     a.appointment_time,
                     a.patient_id,
-                    p.full_name as patient_name,
-                    d.name as doctor_name,
-                    d.department
+                    p.full_name,
+                    d.name,
+                    d.department,
+                    a.status,
+                    a.duration,
+                    a.calendar_event_id
                 FROM appointments a
                 JOIN patients p ON a.patient_id = p.id
                 JOIN doctors d ON a.doctor_id = d.id
                 ORDER BY a.appointment_time DESC;
             """)
-        
         rows = cursor.fetchall()
-
         return {
             'appointments': [
                 {
@@ -100,17 +126,15 @@ async def get_appointments(doctor_id: int = None):
                     'patient_id': r[2],
                     'patient_name': r[3],
                     'doctor_name': r[4],
-                    'department': r[5]
-                }
-                for r in rows
+                    'department': r[5],
+                    'status': r[6],
+                    'duration': r[7],
+                    'calendar_event_id': r[8]
+                } for r in rows
             ]
         }
     except Exception as e:
-        print("Error fetching appointments:", str(e))
-        return JSONResponse(
-            content={"error": f"Failed to fetch appointments: {str(e)}"},
-            status_code=500
-        )
+        return JSONResponse(content={"error": str(e)}, status_code=500)
 
 @Router.get('/patients')
 async def get_patients():
@@ -123,36 +147,30 @@ async def get_patients():
                 p.phone_number,
                 p.status,
                 p.doctor_id,
+                d.name,
                 d.department
             FROM patients p
             LEFT JOIN doctors d ON p.doctor_id = d.id
             ORDER BY p.id;
         """)
         rows = cursor.fetchall()
-        print(f"Found {len(rows)} patients")
-
         return {
             'patients': [
                 {
                     'id': row[0],
                     'full_name': row[1],
                     'dob': row[2].strftime('%Y-%m-%d') if row[2] else None,
-                    'phone_number': row[3] if row[3] else 'Not provided',
-                    'status': row[4] if row[4] else 'active',
+                    'phone_number': row[3],
+                    'status': row[4],
                     'doctor_id': row[5],
-                    'department': row[6] if row[6] else 'Not assigned'
-                }
-                for row in rows
+                    'doctor_name': row[6],
+                    'department': row[7] if row[7] else 'Not assigned'
+                } for row in rows
             ]
         }
     except Exception as e:
-        print("Error fetching patients:", str(e))
-        return JSONResponse(
-            content={"error": f"Failed to fetch patients: {str(e)}"},
-            status_code=500
-        )
+        return JSONResponse(content={"error": str(e)}, status_code=500)
 
-# Dashboard statistics endpoint
 @Router.get('/dashboard/stats')
 async def get_dashboard_stats():
     try:
@@ -199,7 +217,6 @@ async def get_dashboard_stats():
             for row in cursor.fetchall()
         ]
 
-  
         return {
             'stats': {
                 'total_patients': total_patients,
@@ -216,7 +233,6 @@ async def get_dashboard_stats():
             status_code=500
         )
 
-# Additional Dashboard Statistics Endpoints
 @Router.get('/dashboard/appointments-by-department')
 async def get_appointments_by_department():
     try:
@@ -280,7 +296,6 @@ async def get_patient_growth():
 @Router.get('/dashboard/weekly-distribution')
 async def get_weekly_distribution():
     try:
-       
         cursor.execute("""
             SELECT 
                 EXTRACT(DOW FROM appointment_time) as day_of_week,
@@ -292,7 +307,6 @@ async def get_weekly_distribution():
         """)
         
         results = cursor.fetchall()
-
         
         days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
         return {
@@ -343,6 +357,43 @@ async def get_doctor_workload():
 
 @Router.get('/dashboard/age-distribution')
 async def get_age_distribution():
+    try:
+        cursor.execute("""
+            SELECT 
+                CASE 
+                    WHEN age < 18 THEN '0-17'
+                    WHEN age BETWEEN 18 AND 30 THEN '18-30'
+                    WHEN age BETWEEN 31 AND 50 THEN '31-50'
+                    WHEN age BETWEEN 51 AND 70 THEN '51-70'
+                    ELSE '70+'
+                END as age_group,
+                COUNT(*) as patient_count
+            FROM (
+                SELECT 
+                    EXTRACT(YEAR FROM AGE(CURRENT_DATE, dob)) as age
+                FROM patients
+            ) age_calc
+            GROUP BY age_group
+            ORDER BY age_group;
+        """)
+        
+        results = cursor.fetchall()
+        
+        return {
+            'data': [
+                {
+                    'ageGroup': row[0],
+                    'count': row[1]
+                }
+                for row in results
+            ]
+        }
+    except Exception as e:
+        return JSONResponse(
+            content={"error": str(e)},
+            status_code=500
+        )
+
     try:  
         cursor.execute("""
             SELECT 
