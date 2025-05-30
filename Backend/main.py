@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from api.routes.Bland import patients, appointments, doctors
-from api.routes.Dashboard import Frontend
+from api.routes.Dashboard import Frontend,Login
 from database import conn, cursor
 from Google_calender import calendar_service
 
@@ -24,6 +24,7 @@ app.include_router(patients.Router)
 app.include_router(appointments.Router)
 app.include_router(doctors.Router)
 app.include_router(Frontend.Router)
+app.include_router(Login.router)
 
 @app.get("/")
 async def root():
