@@ -12,6 +12,7 @@ def get_categories():
     cats = [row[0] for row in cursor.fetchall()]
     return {'categories': cats}
 
+
 # 2. Doctors endpoint
 @Router.get('/doctors')
 async def get_doctors():
