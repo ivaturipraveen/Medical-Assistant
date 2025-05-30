@@ -229,12 +229,24 @@ async def get_available_booking_dates(request: Request):
         today = datetime.today()
         available_dates = []
         
+        # Map of abbreviated days to full days
+        day_map = {
+            'Mon': 'Monday',
+            'Tue': 'Tuesday',
+            'Wed': 'Wednesday',
+            'Thu': 'Thursday',
+            'Fri': 'Friday',
+            'Sat': 'Saturday',
+            'Sun': 'Sunday'
+        }
+        
         for i in range(1, 8):  # Next 7 days
             current_date = today + timedelta(days=i)
-            day_name = current_date.strftime("%A")
+            day_name = current_date.strftime("%A")  # Full day name
             print(f"Checking day {day_name} for date {current_date.strftime('%Y-%m-%d')}")
             
-            if day_name in available_days:
+            # Check if any abbreviated day in available_days maps to this full day
+            if any(day_map.get(abbr_day, '') == day_name for abbr_day in available_days):
                 available_dates.append(current_date.strftime("%Y-%m-%d"))
 
         print(f"Final available dates: {available_dates}")
