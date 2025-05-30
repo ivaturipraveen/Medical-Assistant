@@ -51,12 +51,25 @@ async def get_time_slot(request: Request):
             return re.sub(r"[^a-z]", "", s.lower())
         norm_input = normalize(raw_input)
 
-        # Fetch all doctor names
-        cursor.execute("SELECT name, available_timings FROM doctors;")
-        doctors = cursor.fetchall()  # list of (name, timings)
+        # Fetch doctor and their availability
+        cursor.execute("""
+            SELECT d.name, da.day_of_week, da.time_slot, da.is_available 
+            FROM doctors d 
+            LEFT JOIN doctor_availability da ON d.id = da.doctor_id 
+            WHERE da.is_available = true;
+        """)
+        doctor_slots = cursor.fetchall()
+
+        # Group slots by doctor
+        doctor_availability = {}
+        for name, day, time_slot, is_available in doctor_slots:
+            if name not in doctor_availability:
+                doctor_availability[name] = []
+            if is_available:
+                doctor_availability[name].append(f"{day} {time_slot}")
 
         # Build mapping: normalized full name to (name, timings)
-        norm_map = {normalize(name): (name, timings) for name, timings in doctors}
+        norm_map = {normalize(name): (name, timings) for name, timings in doctor_availability.items()}
 
         name_match = None
         timings = None
@@ -83,18 +96,20 @@ async def get_time_slot(request: Request):
                 status_code=404
             )
 
-        # Split timings into 30-minute slots
-        slots = split_time_range(timings)
-        return JSONResponse({"doctor_name": name_match, "response": slots,"timings": timings}, status_code=200)
+        return JSONResponse({
+            "doctor_name": name_match, 
+            "response": timings,
+            "timings": timings
+        }, status_code=200)
 
     except Exception as e:
         return JSONResponse({"error": str(e)}, status_code=500)
-    
+
 @Router.post("/Bland/check-avail")
 async def check_avail(request: Request):
     data = await request.json()
     doctor_name = data.get("doctor_name", "").strip()
-    time_input  = data.get("time", "")
+    time_input = data.get("time", "")
 
     if not doctor_name or not time_input:
         return JSONResponse(
@@ -104,6 +119,7 @@ async def check_avail(request: Request):
 
     try:
         req_time = parse_time_input(time_input)
+        req_day = datetime.now().strftime("%A")  # Get current day of week
     except ValueError as e:
         return JSONResponse({"detail": str(e)}, status_code=400)
 
@@ -112,45 +128,44 @@ async def check_avail(request: Request):
     if not result:
         return JSONResponse({"detail": f"Doctor not found matching '{doctor_name}'"}, status_code=404)
 
-    name_match, window, department = result
-    start, end = parse_window(window)
+    name_match, _, _ = result
 
-    # Check if doctor is available at req_time
-    if start <= req_time <= end:
+    # Check if doctor is available at the requested time
+    cursor.execute("""
+        SELECT da.time_slot, da.is_available
+        FROM doctors d
+        JOIN doctor_availability da ON d.id = da.doctor_id
+        WHERE LOWER(d.name) = %s 
+        AND da.day_of_week = %s
+        AND da.time_slot = %s
+        AND da.is_available = true;
+    """, (name_match.lower(), req_day, req_time.strftime("%H:%M:%S")))
+
+    if cursor.fetchone():
         return JSONResponse({"available": True}, status_code=200)
 
-    # Find colleagues in same dept (excluding this doctor)
-    cursor.execute(
-        """
-        SELECT name, available_timings
-          FROM doctors
-         WHERE department = %s
-           AND LOWER(name) != %s;
-        """,
-        (department, name_match.lower())
-    )
-    candidates = []
-    for name, alt_win in cursor.fetchall():
-        s2, e2 = parse_window(alt_win)
-        if s2 <= req_time <= e2:
-            diff = 0
-        elif req_time < s2:
-            diff = (datetime.combine(date.today(), s2) - datetime.combine(date.today(), req_time)).total_seconds()
-        else:
-            diff = (datetime.combine(date.today(), req_time) - datetime.combine(date.today(), e2)).total_seconds()
-        candidates.append((diff, name, alt_win))
+    # Find alternative doctors in same department
+    cursor.execute("""
+        SELECT d.name, da.time_slot
+        FROM doctors d
+        JOIN doctor_availability da ON d.id = da.doctor_id
+        WHERE d.department = (
+            SELECT department FROM doctors WHERE LOWER(name) = %s
+        )
+        AND LOWER(d.name) != %s
+        AND da.day_of_week = %s
+        AND da.time_slot = %s
+        AND da.is_available = true;
+    """, (name_match.lower(), name_match.lower(), req_day, req_time.strftime("%H:%M:%S")))
 
-    candidates.sort(key=lambda x: x[0])
-    overlapping = [c for c in candidates if c[0] == 0]
-    if overlapping:
-        suggestions = [f"{name} - {win}" for _, name, win in overlapping]
-    elif candidates:
-        _, name, win = candidates[0]
-        suggestions = [f"{name} - {win}"]
-    else:
-        suggestions = []
+    suggestions = []
+    for alt_name, alt_time in cursor.fetchall():
+        suggestions.append(f"{alt_name} - {alt_time}")
 
-    return JSONResponse({"available": False, "suggestions": suggestions}, status_code=200)
+    return JSONResponse({
+        "available": False,
+        "suggestions": suggestions
+    }, status_code=200)
 
 @Router.post("/Bland/fetch-date")
 async def get_available_booking_dates():

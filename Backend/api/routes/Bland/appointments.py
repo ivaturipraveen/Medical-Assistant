@@ -24,6 +24,7 @@ async def book_appointment(request: Request):
         parsed_date = parse_date(raw_date) if raw_date else date.today()
         parsed_time = parse_time_input(raw_slot)
         requested_dt = datetime.combine(parsed_date, parsed_time)
+        day_of_week = requested_dt.strftime("%A")
 
         # — Fuzzy‐find doctor & load DB record —
         result = find_doctor_by_name(cursor, raw_dname)
@@ -31,20 +32,22 @@ async def book_appointment(request: Request):
             raise HTTPException(404, f"No doctor matching '{raw_dname}'")
         matched_name, _, _ = result
 
-        cursor.execute(
-            "SELECT id, max_patients, email FROM doctors WHERE LOWER(name) = %s",
-            (matched_name.lower(),)
-        )
+        # Check if doctor is available at the requested time
+        cursor.execute("""
+            SELECT d.id, d.email 
+            FROM doctors d
+            JOIN doctor_availability da ON d.id = da.doctor_id
+            WHERE LOWER(d.name) = %s 
+            AND da.day_of_week = %s
+            AND da.time_slot = %s
+            AND da.is_available = true;
+        """, (matched_name.lower(), day_of_week, parsed_time.strftime("%H:%M:%S")))
+        
         row = cursor.fetchone()
         if not row:
-            raise HTTPException(404, f"Dr. {matched_name} not found in DB")
-        doctor_id, max_patients, doctor_calendar_id = row
-
-        if max_patients <= 0:
-            return JSONResponse(
-                {"detail": f"No available slots for Dr. {matched_name}."},
-                status_code=409
-            )
+            raise HTTPException(404, f"Dr. {matched_name} is not available at the requested time")
+        
+        doctor_id, doctor_email = row
 
         # — Check for existing appointment —
         cursor.execute(
@@ -56,13 +59,11 @@ async def book_appointment(request: Request):
         if existing:
             apt_id, old_doctor_id, old_event_id = existing
 
-            # 1) Give back a slot to the old doctor
-            cursor.execute(
-                "UPDATE doctors SET max_patients = max_patients + 1 WHERE id = %s",
-                (old_doctor_id,)
-            )
+            # Get the old doctor's email for calendar event update
+            cursor.execute("SELECT email FROM doctors WHERE id = %s", (old_doctor_id,))
+            old_doctor_email = cursor.fetchone()[0]
 
-            # 2) Update the appointment record
+            # Update the appointment record
             cursor.execute(
                 """
                 UPDATE appointments
@@ -77,7 +78,7 @@ async def book_appointment(request: Request):
             appointment_id = cursor.fetchone()[0]
             message = "Appointment rescheduled."
         else:
-            # 1) Insert new appointment
+            # Insert new appointment
             cursor.execute(
                 """
                 INSERT INTO appointments
@@ -96,11 +97,14 @@ async def book_appointment(request: Request):
             (phone, doctor_id, patient_id)
         )
 
-        # — Finally, take one slot from the new doctor —
-        cursor.execute(
-            "UPDATE doctors SET max_patients = max_patients - 1 WHERE id = %s",
-            (doctor_id,)
-        )
+        # — Mark the time slot as unavailable —
+        cursor.execute("""
+            UPDATE doctor_availability 
+            SET is_available = false 
+            WHERE doctor_id = %s 
+            AND day_of_week = %s 
+            AND time_slot = %s
+        """, (doctor_id, day_of_week, parsed_time.strftime("%H:%M:%S")))
 
         # — Commit all booking-related DB changes —
         conn.commit()
@@ -110,7 +114,7 @@ async def book_appointment(request: Request):
             if existing:
                 calendar_event_id = update_calendar_event(
                     event_id=old_event_id,
-                    calendar_id=doctor_calendar_id,
+                    calendar_id=old_doctor_email,  # Use old doctor's email for updating
                     title=f"Appointment with patient {patient_id}",
                     new_datetime=requested_dt,
                     duration_minutes=30
@@ -121,7 +125,7 @@ async def book_appointment(request: Request):
                 patient_name = cursor.fetchone()[0]
 
                 calendar_event_id = create_calendar_event(
-                    doctor_calendar_id,
+                    doctor_email,
                     patient_name,
                     requested_dt,
                     duration_minutes=30
@@ -147,7 +151,6 @@ async def book_appointment(request: Request):
             "appointment_time": requested_dt.strftime("%I:%M %p"),
             "status": "scheduled",
             "duration_minutes": 30,
-            "remaining_slots": max_patients - 1,
             "calendar_event_id": calendar_event_id
         }
 
@@ -291,7 +294,7 @@ async def cancel_appointment(request: Request):
             WHERE id = %s
         """, (doctor_id,))
 
-        # Set patient’s doctor_id = 0
+        # Set patient's doctor_id = 0
         cursor.execute("""
             UPDATE patients 
             SET doctor_id = 0 
