@@ -220,11 +220,11 @@ async def get_appointment(request: Request):
 async def cancel_appointment(request: Request):
     try:
         body = await request.json()
-        doctor_name = body.get("doctor_name", "").strip()
-        department = body.get("department", "").strip()
-        raw_date = body.get("date", "").strip()
-        raw_time = body.get("time", "").strip()
-        patient_id = body.get("pid")
+        doctor_name = body["doctor_name"].strip()
+        department = body["department"].strip()
+        raw_date = body["date"].strip()
+        raw_time = body["time"].strip()
+        patient_id = body["pid"]
 
         if not all([doctor_name, department, raw_date, raw_time, patient_id]):
             return JSONResponse(
