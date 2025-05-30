@@ -254,11 +254,6 @@ async def get_available_booking_dates(request: Request):
         return JSONResponse({
             "doctor_name": matched_name,
             "available_dates": available_dates,
-            "debug_info": {
-                "matched_name": matched_name,
-                "available_days": available_days,
-                "availability": formatted_availability
-            }
         }, status_code=200)
 
     except Exception as e:
