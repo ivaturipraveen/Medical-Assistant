@@ -43,67 +43,78 @@ async def get_time_slot(request: Request):
     try:
         data = await request.json()
         raw_input = data.get("d_name", "").strip()
-        if not raw_input:
-            return JSONResponse({"error": "Doctor name is required."}, status_code=422)
+        selected_date = data.get("S_date", "").strip()
 
-        # Normalize: lowercase, remove non-letters
-        def normalize(s: str) -> str:
-            return re.sub(r"[^a-z]", "", s.lower())
-        norm_input = normalize(raw_input)
-
-        # Fetch doctor and their availability
-        cursor.execute("""
-            SELECT d.name, da.day_of_week, da.time_slot, da.is_available 
-            FROM doctors d 
-            LEFT JOIN doctor_availability da ON d.id = da.doctor_id 
-            WHERE da.is_available = true;
-        """)
-        doctor_slots = cursor.fetchall()
-
-        # Group slots by doctor
-        doctor_availability = {}
-        for name, day, time_slot, is_available in doctor_slots:
-            if name not in doctor_availability:
-                doctor_availability[name] = []
-            if is_available:
-                doctor_availability[name].append(f"{day} {time_slot}")
-
-        # Build mapping: normalized full name to (name, timings)
-        norm_map = {normalize(name): (name, timings) for name, timings in doctor_availability.items()}
-
-        name_match = None
-        timings = None
-
-        # 1. Exact normalized match
-        if norm_input in norm_map:
-            name_match, timings = norm_map[norm_input]
-        else:
-            # 2. Substring match
-            for key, (nm, tm) in norm_map.items():
-                if norm_input and norm_input in key:
-                    name_match, timings = nm, tm
-                    break
-            # 3. Fallback fuzzy
-            if not name_match:
-                choices = list(norm_map.keys())
-                fuzzy = difflib.get_close_matches(norm_input, choices, n=1, cutoff=0.5)
-                if fuzzy:
-                    name_match, timings = norm_map[fuzzy[0]]
-
-        if not name_match:
+        if not raw_input or not selected_date:
             return JSONResponse(
-                {"response": f"No doctor found matching '{raw_input}'."},
-                status_code=404
+                {"error": "Doctor name and date are required."}, 
+                status_code=422
             )
 
+        # Parse the selected date
+        try:
+            selected_date = datetime.strptime(selected_date, "%Y-%m-%d")
+        except ValueError:
+            return JSONResponse(
+                {"error": "Invalid date format. Please use YYYY-MM-DD format."}, 
+                status_code=400
+            )
+
+        # Get the day of week for the selected date
+        day_of_week = selected_date.strftime("%a")  # Returns abbreviated day (e.g., "Mon", "Tue")
+
+        # Find doctor using flexible matching
+        result = find_doctor_by_name(cursor, raw_input)
+        if not result:
+            return JSONResponse(
+                {"error": f"No doctor found matching '{raw_input}'"},
+                status_code=404
+            )
+        matched_name, _, _ = result
+
+        # Get available time slots for the doctor on the selected day
+        cursor.execute("""
+            SELECT da.time_slot
+            FROM doctors d
+            JOIN doctor_availability da ON d.id = da.doctor_id
+            WHERE LOWER(d.name) = %s
+            AND da.day_of_week = %s
+            AND da.is_available = true
+            ORDER BY da.time_slot;
+        """, (matched_name.lower(), day_of_week))
+        
+        time_slots = cursor.fetchall()
+        
+        if not time_slots:
+            return JSONResponse({
+                "doctor_name": matched_name,
+                "date": selected_date.strftime("%Y-%m-%d"),
+                "available_slots": [],
+                "availability": "Not Available",
+                "message": f"No available slots found for Dr. {matched_name} on {selected_date.strftime('%Y-%m-%d')}"
+            }, status_code=200)
+
+        # Format time slots to 12-hour format
+        formatted_slots = []
+        for slot in time_slots:
+            time_obj = datetime.strptime(str(slot[0]), "%H:%M:%S")
+            formatted_time = time_obj.strftime("%I:%M %p")
+            formatted_slots.append(formatted_time)
+
         return JSONResponse({
-            "doctor_name": name_match, 
-            "response": timings,
-            "timings": timings
-        }, status_code=200)
+            "doctor_name": matched_name,
+            "date": selected_date.strftime("%Y-%m-%d"),
+            "available_slots": formatted_slots,
+            "availability": "Available"
+                   
+         }, status_code=200)
 
     except Exception as e:
-        return JSONResponse({"error": str(e)}, status_code=500)
+        print(f"Error in time-slot: {str(e)}")
+        return JSONResponse(
+            {"error": "Failed to get time slots", "details": str(e)},
+            status_code=500
+        )
 
 @Router.post("/Bland/check-avail")
 async def check_avail(request: Request):
