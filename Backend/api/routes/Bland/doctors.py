@@ -1,5 +1,5 @@
 from fastapi import APIRouter,Request
-from api.Utils.helper import parse_time_input,parse_window,split_time_range,find_doctor_by_name
+from api.Utils.helper import parse_time_input,find_doctor_by_name, parse_date
 import difflib
 import json
 from datetime import datetime,timedelta,date
@@ -43,128 +43,171 @@ async def get_time_slot(request: Request):
     try:
         data = await request.json()
         raw_input = data.get("d_name", "").strip()
-        if not raw_input:
-            return JSONResponse({"error": "Doctor name is required."}, status_code=422)
+        selected_date = data.get("S_date", "").strip()
 
-        # Normalize: lowercase, remove non-letters
-        def normalize(s: str) -> str:
-            return re.sub(r"[^a-z]", "", s.lower())
-        norm_input = normalize(raw_input)
-
-        # Fetch doctor and their availability
-        cursor.execute("""
-            SELECT d.name, da.day_of_week, da.time_slot, da.is_available 
-            FROM doctors d 
-            LEFT JOIN doctor_availability da ON d.id = da.doctor_id 
-            WHERE da.is_available = true;
-        """)
-        doctor_slots = cursor.fetchall()
-
-        # Group slots by doctor
-        doctor_availability = {}
-        for name, day, time_slot, is_available in doctor_slots:
-            if name not in doctor_availability:
-                doctor_availability[name] = []
-            if is_available:
-                doctor_availability[name].append(f"{day} {time_slot}")
-
-        # Build mapping: normalized full name to (name, timings)
-        norm_map = {normalize(name): (name, timings) for name, timings in doctor_availability.items()}
-
-        name_match = None
-        timings = None
-
-        # 1. Exact normalized match
-        if norm_input in norm_map:
-            name_match, timings = norm_map[norm_input]
-        else:
-            # 2. Substring match
-            for key, (nm, tm) in norm_map.items():
-                if norm_input and norm_input in key:
-                    name_match, timings = nm, tm
-                    break
-            # 3. Fallback fuzzy
-            if not name_match:
-                choices = list(norm_map.keys())
-                fuzzy = difflib.get_close_matches(norm_input, choices, n=1, cutoff=0.5)
-                if fuzzy:
-                    name_match, timings = norm_map[fuzzy[0]]
-
-        if not name_match:
+        if not raw_input or not selected_date:
             return JSONResponse(
-                {"response": f"No doctor found matching '{raw_input}'."},
-                status_code=404
+                {"error": "Doctor name and date are required."}, 
+                status_code=422
             )
 
+        # Parse the selected date using helper function
+        parsed_date = parse_date(selected_date)
+        if not parsed_date:
+            return JSONResponse(
+                {"error": "Invalid date format. Please use a valid date format (e.g., YYYY-MM-DD, DD/MM/YYYY, Month DD YYYY)"}, 
+                status_code=400
+            )
+
+        # Get the day of week for the selected date
+        day_of_week = parsed_date.strftime("%a")  # Returns abbreviated day (e.g., "Mon", "Tue")
+
+        # Find doctor using flexible matching
+        result = find_doctor_by_name(cursor, raw_input)
+        if not result:
+            return JSONResponse(
+                {"error": f"No doctor found matching '{raw_input}'"},
+                status_code=404
+            )
+        matched_name, _, _ = result
+
+        # Get available time slots for the doctor on the selected day
+        cursor.execute("""
+            SELECT da.time_slot
+            FROM doctors d
+            JOIN doctor_availability da ON d.id = da.doctor_id
+            WHERE LOWER(d.name) = %s
+            AND da.day_of_week = %s
+            AND da.is_available = true
+            ORDER BY da.time_slot;
+        """, (matched_name.lower(), day_of_week))
+        
+        time_slots = cursor.fetchall()
+        
+        if not time_slots:
+            return JSONResponse({
+                "doctor_name": matched_name,
+                "date": parsed_date.strftime("%Y-%m-%d"),
+                "available_slots": [],
+                "availability": "Not Available"
+            }, status_code=200)
+
+        # Format time slots to 12-hour format
+        formatted_slots = []
+        for slot in time_slots:
+            time_obj = datetime.strptime(str(slot[0]), "%H:%M:%S")
+            formatted_time = time_obj.strftime("%I:%M %p")
+            formatted_slots.append(formatted_time)
+
         return JSONResponse({
-            "doctor_name": name_match, 
-            "response": timings,
-            "timings": timings
+            "doctor_name": matched_name,
+            "date": parsed_date.strftime("%Y-%m-%d"),
+            "available_slots": formatted_slots,
+            "availability": "Available"
         }, status_code=200)
 
     except Exception as e:
-        return JSONResponse({"error": str(e)}, status_code=500)
+        print(f"Error in time-slot: {str(e)}")
+        return JSONResponse(
+            {"error": "Failed to get time slots", "details": str(e)},
+            status_code=500
+        )
 
 @Router.post("/Bland/check-avail")
 async def check_avail(request: Request):
     data = await request.json()
-    doctor_name = data.get("doctor_name", "").strip()
-    time_input = data.get("time", "")
+    doctor_name = data.get("d_name", "").strip()
+    requested_date = data.get("S_date", "").strip()
 
-    if not doctor_name or not time_input:
+    if not doctor_name or not requested_date:
         return JSONResponse(
-            {"detail": "`doctor_name` and `time` are required"},
+            {"error": "Doctor name and date are required"},
             status_code=422
         )
 
-    try:
-        req_time = parse_time_input(time_input)
-        req_day = datetime.now().strftime("%A")  # Get current day of week
-    except ValueError as e:
-        return JSONResponse({"detail": str(e)}, status_code=400)
+    # Parse the requested date
+    parsed_date = parse_date(requested_date)
+    if not parsed_date:
+        return JSONResponse(
+            {"error": "Invalid date format. Please use a valid date format"},
+            status_code=400
+        )
 
     # Find doctor using flexible matching
     result = find_doctor_by_name(cursor, doctor_name)
     if not result:
-        return JSONResponse({"detail": f"Doctor not found matching '{doctor_name}'"}, status_code=404)
+        return JSONResponse(
+            {"error": f"Doctor not found matching '{doctor_name}'"}, 
+            status_code=404
+        )
+    matched_name, _, _ = result
 
-    name_match, _, _ = result
+    # Get the day of week for the requested date
+    req_day = parsed_date.strftime("%a")  # Returns abbreviated day (e.g., "Mon", "Tue")
 
-    # Check if doctor is available at the requested time
+    # Check if doctor is available on the requested date
     cursor.execute("""
-        SELECT da.time_slot, da.is_available
+        SELECT da.time_slot
         FROM doctors d
         JOIN doctor_availability da ON d.id = da.doctor_id
         WHERE LOWER(d.name) = %s 
         AND da.day_of_week = %s
-        AND da.time_slot = %s
         AND da.is_available = true;
-    """, (name_match.lower(), req_day, req_time.strftime("%H:%M:%S")))
+    """, (matched_name.lower(), req_day))
 
-    if cursor.fetchone():
-        return JSONResponse({"available": True}, status_code=200)
+    time_slots = cursor.fetchall()
+    
+    if time_slots:
+        # Doctor is available on the requested date
+        formatted_slots = []
+        for slot in time_slots:
+            time_obj = datetime.strptime(str(slot[0]), "%H:%M:%S")
+            formatted_time = time_obj.strftime("%I:%M %p")
+            formatted_slots.append(formatted_time)
 
-    # Find alternative doctors in same department
+        return JSONResponse({
+            "doctor_name": matched_name,
+            "requested_date": parsed_date.strftime("%Y-%m-%d"),
+            "available": True,
+            "available_slots": formatted_slots
+        }, status_code=200)
+
+    # If not available on requested date, find other available dates
     cursor.execute("""
-        SELECT d.name, da.time_slot
+        SELECT DISTINCT da.day_of_week
         FROM doctors d
         JOIN doctor_availability da ON d.id = da.doctor_id
-        WHERE d.department = (
-            SELECT department FROM doctors WHERE LOWER(name) = %s
-        )
-        AND LOWER(d.name) != %s
-        AND da.day_of_week = %s
-        AND da.time_slot = %s
+        WHERE LOWER(d.name) = %s
         AND da.is_available = true;
-    """, (name_match.lower(), name_match.lower(), req_day, req_time.strftime("%H:%M:%S")))
+    """, (matched_name.lower(),))
 
-    suggestions = []
-    for alt_name, alt_time in cursor.fetchall():
-        suggestions.append(f"{alt_name} - {alt_time}")
+    available_days = [row[0] for row in cursor.fetchall()]
+    
+    if not available_days:
+        return JSONResponse({
+            "doctor_name": matched_name,
+            "requested_date": parsed_date.strftime("%Y-%m-%d"),
+            "available": False,
+            "message": "No available dates found for this doctor"
+        }, status_code=200)
+
+    # Generate dates for the next 14 days
+    today = datetime.today()
+    available_dates = []
+    
+    for i in range(1, 15):  # Check next 14 days
+        current_date = today + timedelta(days=i)
+        day_name = current_date.strftime("%a")
+        
+        if day_name in available_days and current_date.date() != parsed_date:
+            available_dates.append(current_date.strftime("%Y-%m-%d"))
 
     return JSONResponse({
+        "doctor_name": matched_name,
+        "requested_date": parsed_date.strftime("%Y-%m-%d"),
         "available": False,
-        "suggestions": suggestions
+        "message": f"No slots available on {parsed_date.strftime('%Y-%m-%d')}, but available on other dates",
+        "available_dates": available_dates
     }, status_code=200)
 
 @Router.post("/Bland/fetch-date")
@@ -190,39 +233,74 @@ async def get_available_booking_dates(request: Request):
             )
         matched_name, _, _ = result
 
-        # Get available days for the doctor
+        # Debug: Print the matched doctor name
+        print(f"Found doctor: {matched_name}")
+
+        # Get doctor's available days with debug info
         cursor.execute("""
-            SELECT DISTINCT day_of_week 
-            FROM doctor_availability 
-            WHERE doctor_id = (SELECT id FROM doctors WHERE LOWER(name) = %s)
-            AND is_available = true
+            SELECT DISTINCT da.day_of_week, da.time_slot
+            FROM doctors d
+            JOIN doctor_availability da ON d.id = da.doctor_id
+            WHERE LOWER(d.name) = %s
+            AND da.is_available = true;
         """, (matched_name.lower(),))
         
-        available_days = [row[0] for row in cursor.fetchall()]
+        availability = cursor.fetchall()
+        print(f"Raw availability data: {availability}")
         
-        if not available_days:
+        if not availability:
             return JSONResponse(
-                {"error": f"No available days found for Dr. {matched_name}"},
+                {"error": f"No available slots found for Dr. {matched_name}"},
                 status_code=404
             )
+
+        # Get unique days and format time slots
+        available_days = list(set(day for day, _ in availability))
+        formatted_availability = []
+        for day, time_slot in availability:
+            # Convert time to 12-hour format
+            time_obj = datetime.strptime(str(time_slot), "%H:%M:%S")
+            formatted_time = time_obj.strftime("%I:%M %p")
+            formatted_availability.append({
+                "day": day,
+                "time": formatted_time
+            })
+
+        print(f"Available days: {available_days}")
 
         # Generate dates for the next 7 days
         today = datetime.today()
         available_dates = []
         
+        # Map of abbreviated days to full days
+        day_map = {
+            'Mon': 'Monday',
+            'Tue': 'Tuesday',
+            'Wed': 'Wednesday',
+            'Thu': 'Thursday',
+            'Fri': 'Friday',
+            'Sat': 'Saturday',
+            'Sun': 'Sunday'
+        }
+        
         for i in range(1, 8):  # Next 7 days
             current_date = today + timedelta(days=i)
-            day_name = current_date.strftime("%A")
+            day_name = current_date.strftime("%A")  # Full day name
+            print(f"Checking day {day_name} for date {current_date.strftime('%Y-%m-%d')}")
             
-            if day_name in available_days:
+            # Check if any abbreviated day in available_days maps to this full day
+            if any(day_map.get(abbr_day, '') == day_name for abbr_day in available_days):
                 available_dates.append(current_date.strftime("%Y-%m-%d"))
+
+        print(f"Final available dates: {available_dates}")
 
         return JSONResponse({
             "doctor_name": matched_name,
-            "available_dates": available_dates
+            "available_dates": available_dates,
         }, status_code=200)
 
     except Exception as e:
+        print(f"Error in fetch-date: {str(e)}")
         return JSONResponse(
             {"error": "Failed to get booking dates", "details": str(e)},
             status_code=500
