@@ -1,5 +1,5 @@
 from fastapi import APIRouter,Request
-from api.Utils.helper import parse_time_input,find_doctor_by_name
+from api.Utils.helper import parse_time_input,find_doctor_by_name, parse_date
 import difflib
 import json
 from datetime import datetime,timedelta,date
@@ -51,17 +51,16 @@ async def get_time_slot(request: Request):
                 status_code=422
             )
 
-        # Parse the selected date
-        try:
-            selected_date = datetime.strptime(selected_date, "%Y-%m-%d")
-        except ValueError:
+        # Parse the selected date using helper function
+        parsed_date = parse_date(selected_date)
+        if not parsed_date:
             return JSONResponse(
-                {"error": "Invalid date format. Please use YYYY-MM-DD format."}, 
+                {"error": "Invalid date format. Please use a valid date format (e.g., YYYY-MM-DD, DD/MM/YYYY, Month DD YYYY)"}, 
                 status_code=400
             )
 
         # Get the day of week for the selected date
-        day_of_week = selected_date.strftime("%a")  # Returns abbreviated day (e.g., "Mon", "Tue")
+        day_of_week = parsed_date.strftime("%a")  # Returns abbreviated day (e.g., "Mon", "Tue")
 
         # Find doctor using flexible matching
         result = find_doctor_by_name(cursor, raw_input)
@@ -88,10 +87,9 @@ async def get_time_slot(request: Request):
         if not time_slots:
             return JSONResponse({
                 "doctor_name": matched_name,
-                "date": selected_date.strftime("%Y-%m-%d"),
+                "date": parsed_date.strftime("%Y-%m-%d"),
                 "available_slots": [],
-                "availability": "Not Available",
-                "message": f"No available slots found for Dr. {matched_name} on {selected_date.strftime('%Y-%m-%d')}"
+                "availability": "Not Available"
             }, status_code=200)
 
         # Format time slots to 12-hour format
@@ -103,11 +101,10 @@ async def get_time_slot(request: Request):
 
         return JSONResponse({
             "doctor_name": matched_name,
-            "date": selected_date.strftime("%Y-%m-%d"),
+            "date": parsed_date.strftime("%Y-%m-%d"),
             "available_slots": formatted_slots,
             "availability": "Available"
-                   
-         }, status_code=200)
+        }, status_code=200)
 
     except Exception as e:
         print(f"Error in time-slot: {str(e)}")
