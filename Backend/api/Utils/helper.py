@@ -96,12 +96,12 @@ def find_doctor_by_name(cursor, input_name: str):
     norm_input = normalize_name(input_name)
 
     # Fetch all doctors
-    cursor.execute("SELECT name, available_timings, department FROM doctors;")
+    cursor.execute("SELECT name, department FROM doctors;")
     doctors = cursor.fetchall()
 
     # Build normalized map
-    norm_map = {normalize_name(name): (name, available_timings, department) 
-                for name, available_timings, department in doctors}
+    norm_map = {normalize_name(name): (name, None, department) 
+                for name, department in doctors}
 
     # 1) Exact normalized match
     if norm_input in norm_map:
@@ -139,10 +139,26 @@ def parse_date(dob_str: str) -> date:
         s = s.lower().replace(',', ' ')
         for suf in ['st','nd','rd','th']:
             s = s.replace(suf, '')
+        # Handle dates without spaces (e.g., "31may")
+        if not any(c.isspace() for c in s):
+            # Try to split at the boundary between digits and letters
+            match = re.match(r'(\d+)([a-zA-Z]+)', s)
+            if match:
+                day, month = match.groups()
+                s = f"{month} {day}"
         return ' '.join(s.split())
 
     s = clean_date(dob_str)
     parts = s.split()
+    
+    # If only month and day are provided, use current year
+    if len(parts) == 2:
+        mo = parse_month(parts[0])
+        if mo and parts[1].isdigit():
+            day = int(parts[1])
+            if 1 <= day <= 31:
+                current_year = datetime.now().year
+                return datetime.strptime(f"{current_year}/{mo:02d}/{day:02d}", "%Y/%m/%d").date()
     
     # Year-only
     if len(parts)==1 and parts[0].isdigit() and len(parts[0])==4:
@@ -157,7 +173,7 @@ def parse_date(dob_str: str) -> date:
             for p in rem:
                 mo = parse_month(p)
                 if mo:
-                    days = [int(x) for x in rem if x.isdigit()]
+                    days = [int(x) for x in rem if x.isdigit() and len(x)<=2]
                     if days:
                         return datetime.strptime(f"{year}/{mo:02d}/{days[0]:02d}", "%Y/%m/%d").date()
         # month first
@@ -165,8 +181,9 @@ def parse_date(dob_str: str) -> date:
         if mo:
             days = [int(x) for x in parts if x.isdigit() and len(x)<=2]
             yrs = [x for x in parts if x.isdigit() and len(x)==4]
-            if days and yrs:
-                return datetime.strptime(f"{yrs[0]}/{mo:02d}/{days[0]:02d}", "%Y/%m/%d").date()
+            if days:
+                year = yrs[0] if yrs else datetime.now().year
+                return datetime.strptime(f"{year}/{mo:02d}/{days[0]:02d}", "%Y/%m/%d").date()
         # day first
         if parts[i].isdigit() and len(parts[i])<=2:
             day = int(parts[i])
@@ -174,11 +191,11 @@ def parse_date(dob_str: str) -> date:
                 mo = parse_month(p)
                 if mo:
                     yrs = [x for x in parts if x.isdigit() and len(x)==4]
-                    if yrs:
-                        return datetime.strptime(f"{yrs[0]}/{mo:02d}/{day:02d}", "%Y/%m/%d").date()
+                    year = yrs[0] if yrs else datetime.now().year
+                    return datetime.strptime(f"{year}/{mo:02d}/{day:02d}", "%Y/%m/%d").date()
     
     # Try standard formats
-    for fmt in ["%Y-%m-%d","%Y%m%d","%Y/%m/%d","%d-%m-%Y","%d/%m/%Y","%m/%d/%Y"]:
+    for fmt in ["%Y-%m-%d", "%Y%m%d", "%Y/%m/%d", "%d-%m-%Y", "%d/%m/%Y", "%m/%d/%Y", "%d-%m-%y", "%d/%m/%y"]:
         try:
             return datetime.strptime(dob_str, fmt).date()
         except ValueError:
