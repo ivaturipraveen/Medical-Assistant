@@ -168,19 +168,63 @@ async def check_avail(request: Request):
     }, status_code=200)
 
 @Router.post("/Bland/fetch-date")
-async def get_available_booking_dates():
+async def get_available_booking_dates(request: Request):
     try:
+        data = await request.json()
+        raw_dname = data.get("d_name", "").strip()
+        
+        if not raw_dname:
+            return JSONResponse({"error": "Doctor name is required"}, status_code=422)
+
+        # Normalize doctor name
+        def normalize(s: str) -> str:
+            return re.sub(r"[^a-z]", "", s.lower())
+        norm_input = normalize(raw_dname)
+
+        # Find doctor using flexible matching
+        result = find_doctor_by_name(cursor, raw_dname)
+        if not result:
+            return JSONResponse(
+                {"error": f"No doctor found matching '{raw_dname}'"},
+                status_code=404
+            )
+        matched_name, _, _ = result
+
+        # Get available days for the doctor
+        cursor.execute("""
+            SELECT DISTINCT day_of_week 
+            FROM doctor_availability 
+            WHERE doctor_id = (SELECT id FROM doctors WHERE LOWER(name) = %s)
+            AND is_available = true
+        """, (matched_name.lower(),))
+        
+        available_days = [row[0] for row in cursor.fetchall()]
+        
+        if not available_days:
+            return JSONResponse(
+                {"error": f"No available days found for Dr. {matched_name}"},
+                status_code=404
+            )
+
+        # Generate dates for the next 7 days
         today = datetime.today()
-        end_of_week = today + timedelta(days=(6 - today.weekday()))  # Sunday
         available_dates = []
+        
+        for i in range(1, 8):  # Next 7 days
+            current_date = today + timedelta(days=i)
+            day_name = current_date.strftime("%A")
+            
+            if day_name in available_days:
+                available_dates.append(current_date.strftime("%Y-%m-%d"))
 
-        current_date = today + timedelta(days=1)
-        while current_date <= end_of_week:
-            available_dates.append(current_date.strftime("%Y-%m-%d"))
-            current_date += timedelta(days=1)
-
-        return JSONResponse({"available_dates": available_dates}, status_code=200)
+        return JSONResponse({
+            "doctor_name": matched_name,
+            "available_dates": available_dates
+        }, status_code=200)
 
     except Exception as e:
-        return JSONResponse({"error": "Failed to get booking dates", "details": str(e)}, status_code=500)
+        return JSONResponse(
+            {"error": "Failed to get booking dates", "details": str(e)},
+            status_code=500
+        )
 
