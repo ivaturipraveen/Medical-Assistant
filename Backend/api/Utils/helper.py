@@ -96,12 +96,12 @@ def find_doctor_by_name(cursor, input_name: str):
     norm_input = normalize_name(input_name)
 
     # Fetch all doctors
-    cursor.execute("SELECT name, available_timings, department FROM doctors;")
+    cursor.execute("SELECT name, department FROM doctors;")
     doctors = cursor.fetchall()
 
     # Build normalized map
-    norm_map = {normalize_name(name): (name, available_timings, department) 
-                for name, available_timings, department in doctors}
+    norm_map = {normalize_name(name): (name, None, department) 
+                for name, department in doctors}
 
     # 1) Exact normalized match
     if norm_input in norm_map:
