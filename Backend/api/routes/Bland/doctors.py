@@ -190,51 +190,37 @@ async def get_available_booking_dates(request: Request):
             )
         matched_name, _, _ = result
 
-        # Get doctor's available time slots grouped by day
+        # Get doctor's available days
         cursor.execute("""
-            SELECT 
-                da.day_of_week,
-                array_agg(da.time_slot ORDER BY da.time_slot) as time_slots
+            SELECT DISTINCT day_of_week
             FROM doctors d
             JOIN doctor_availability da ON d.id = da.doctor_id
             WHERE LOWER(d.name) = %s
-            AND da.is_available = true
-            GROUP BY da.day_of_week
-            ORDER BY 
-                CASE da.day_of_week
-                    WHEN 'Monday' THEN 1
-                    WHEN 'Tuesday' THEN 2
-                    WHEN 'Wednesday' THEN 3
-                    WHEN 'Thursday' THEN 4
-                    WHEN 'Friday' THEN 5
-                    WHEN 'Saturday' THEN 6
-                    WHEN 'Sunday' THEN 7
-                END;
+            AND da.is_available = true;
         """, (matched_name.lower(),))
         
-        availability = cursor.fetchall()
+        available_days = [row[0] for row in cursor.fetchall()]
         
-        if not availability:
+        if not available_days:
             return JSONResponse(
-                {"error": f"No available slots found for Dr. {matched_name}"},
+                {"error": f"No available days found for Dr. {matched_name}"},
                 status_code=404
             )
 
-        # Format the response
-        formatted_availability = {}
-        for day, time_slots in availability:
-            # Convert times to 12-hour format
-            formatted_times = []
-            for time in time_slots:
-                time_obj = datetime.strptime(str(time), "%H:%M:%S")
-                formatted_time = time_obj.strftime("%I:%M %p")
-                formatted_times.append(formatted_time)
+        # Generate dates for the next 7 days
+        today = datetime.today()
+        available_dates = []
+        
+        for i in range(1, 8):  # Next 7 days
+            current_date = today + timedelta(days=i)
+            day_name = current_date.strftime("%A")
             
-            formatted_availability[day] = formatted_times
+            if day_name in available_days:
+                available_dates.append(current_date.strftime("%Y-%m-%d"))
 
         return JSONResponse({
             "doctor_name": matched_name,
-            "availability": formatted_availability
+            "available_dates": available_dates
         }, status_code=200)
 
     except Exception as e:
