@@ -116,63 +116,98 @@ async def get_time_slot(request: Request):
 @Router.post("/Bland/check-avail")
 async def check_avail(request: Request):
     data = await request.json()
-    doctor_name = data.get("doctor_name", "").strip()
-    time_input = data.get("time", "")
+    doctor_name = data.get("d_name", "").strip()
+    requested_date = data.get("S_date", "").strip()
 
-    if not doctor_name or not time_input:
+    if not doctor_name or not requested_date:
         return JSONResponse(
-            {"detail": "`doctor_name` and `time` are required"},
+            {"error": "Doctor name and date are required"},
             status_code=422
         )
 
-    try:
-        req_time = parse_time_input(time_input)
-        req_day = datetime.now().strftime("%A")  # Get current day of week
-    except ValueError as e:
-        return JSONResponse({"detail": str(e)}, status_code=400)
+    # Parse the requested date
+    parsed_date = parse_date(requested_date)
+    if not parsed_date:
+        return JSONResponse(
+            {"error": "Invalid date format. Please use a valid date format"},
+            status_code=400
+        )
 
     # Find doctor using flexible matching
     result = find_doctor_by_name(cursor, doctor_name)
     if not result:
-        return JSONResponse({"detail": f"Doctor not found matching '{doctor_name}'"}, status_code=404)
+        return JSONResponse(
+            {"error": f"Doctor not found matching '{doctor_name}'"}, 
+            status_code=404
+        )
+    matched_name, _, _ = result
 
-    name_match, _, _ = result
+    # Get the day of week for the requested date
+    req_day = parsed_date.strftime("%a")  # Returns abbreviated day (e.g., "Mon", "Tue")
 
-    # Check if doctor is available at the requested time
+    # Check if doctor is available on the requested date
     cursor.execute("""
-        SELECT da.time_slot, da.is_available
+        SELECT da.time_slot
         FROM doctors d
         JOIN doctor_availability da ON d.id = da.doctor_id
         WHERE LOWER(d.name) = %s 
         AND da.day_of_week = %s
-        AND da.time_slot = %s
         AND da.is_available = true;
-    """, (name_match.lower(), req_day, req_time.strftime("%H:%M:%S")))
+    """, (matched_name.lower(), req_day))
 
-    if cursor.fetchone():
-        return JSONResponse({"available": True}, status_code=200)
+    time_slots = cursor.fetchall()
+    
+    if time_slots:
+        # Doctor is available on the requested date
+        formatted_slots = []
+        for slot in time_slots:
+            time_obj = datetime.strptime(str(slot[0]), "%H:%M:%S")
+            formatted_time = time_obj.strftime("%I:%M %p")
+            formatted_slots.append(formatted_time)
 
-    # Find alternative doctors in same department
+        return JSONResponse({
+            "doctor_name": matched_name,
+            "requested_date": parsed_date.strftime("%Y-%m-%d"),
+            "available": True,
+            "available_slots": formatted_slots
+        }, status_code=200)
+
+    # If not available on requested date, find other available dates
     cursor.execute("""
-        SELECT d.name, da.time_slot
+        SELECT DISTINCT da.day_of_week
         FROM doctors d
         JOIN doctor_availability da ON d.id = da.doctor_id
-        WHERE d.department = (
-            SELECT department FROM doctors WHERE LOWER(name) = %s
-        )
-        AND LOWER(d.name) != %s
-        AND da.day_of_week = %s
-        AND da.time_slot = %s
+        WHERE LOWER(d.name) = %s
         AND da.is_available = true;
-    """, (name_match.lower(), name_match.lower(), req_day, req_time.strftime("%H:%M:%S")))
+    """, (matched_name.lower(),))
 
-    suggestions = []
-    for alt_name, alt_time in cursor.fetchall():
-        suggestions.append(f"{alt_name} - {alt_time}")
+    available_days = [row[0] for row in cursor.fetchall()]
+    
+    if not available_days:
+        return JSONResponse({
+            "doctor_name": matched_name,
+            "requested_date": parsed_date.strftime("%Y-%m-%d"),
+            "available": False,
+            "message": "No available dates found for this doctor"
+        }, status_code=200)
+
+    # Generate dates for the next 14 days
+    today = datetime.today()
+    available_dates = []
+    
+    for i in range(1, 15):  # Check next 14 days
+        current_date = today + timedelta(days=i)
+        day_name = current_date.strftime("%a")
+        
+        if day_name in available_days and current_date.date() != parsed_date:
+            available_dates.append(current_date.strftime("%Y-%m-%d"))
 
     return JSONResponse({
+        "doctor_name": matched_name,
+        "requested_date": parsed_date.strftime("%Y-%m-%d"),
         "available": False,
-        "suggestions": suggestions
+        "message": f"No slots available on {parsed_date.strftime('%Y-%m-%d')}, but available on other dates",
+        "available_dates": available_dates
     }, status_code=200)
 
 @Router.post("/Bland/fetch-date")
