@@ -136,13 +136,16 @@ def parse_date(dob_str: str) -> date:
         return None
 
     def clean_date(s):
-        # Handle dates without spaces (e.g., "31may")
-        s = s.lower()
-        # Add space between day and month if missing
-        s = re.sub(r'(\d+)([a-z]+)', r'\1 \2', s)
-        s = s.replace(',', ' ')
+        s = s.lower().replace(',', ' ')
         for suf in ['st','nd','rd','th']:
             s = s.replace(suf, '')
+        # Handle dates without spaces (e.g., "31may")
+        if not any(c.isspace() for c in s):
+            # Try to split at the boundary between digits and letters
+            match = re.match(r'(\d+)([a-zA-Z]+)', s)
+            if match:
+                day, month = match.groups()
+                s = f"{month} {day}"
         return ' '.join(s.split())
 
     s = clean_date(dob_str)
@@ -155,18 +158,11 @@ def parse_date(dob_str: str) -> date:
             day = int(parts[1])
             if 1 <= day <= 31:
                 current_year = datetime.now().year
-                parsed_date = datetime.strptime(f"{current_year}/{mo:02d}/{day:02d}", "%Y/%m/%d").date()
-                # Check if date is in the past
-                if parsed_date < date.today():
-                    return None
-                return parsed_date
+                return datetime.strptime(f"{current_year}/{mo:02d}/{day:02d}", "%Y/%m/%d").date()
     
     # Year-only
     if len(parts)==1 and parts[0].isdigit() and len(parts[0])==4:
-        parsed_date = datetime.strptime(f"{parts[0]}/01/01", "%Y/%m/%d").date()
-        if parsed_date < date.today():
-            return None
-        return parsed_date
+        return datetime.strptime(f"{parts[0]}/01/01", "%Y/%m/%d").date()
     
     # Try combinations
     for i in range(len(parts)):
@@ -177,12 +173,9 @@ def parse_date(dob_str: str) -> date:
             for p in rem:
                 mo = parse_month(p)
                 if mo:
-                    days = [int(x) for x in rem if x.isdigit()]
+                    days = [int(x) for x in rem if x.isdigit() and len(x)<=2]
                     if days:
-                        parsed_date = datetime.strptime(f"{year}/{mo:02d}/{days[0]:02d}", "%Y/%m/%d").date()
-                        if parsed_date < date.today():
-                            return None
-                        return parsed_date
+                        return datetime.strptime(f"{year}/{mo:02d}/{days[0]:02d}", "%Y/%m/%d").date()
         # month first
         mo = parse_month(parts[i])
         if mo:
@@ -190,10 +183,7 @@ def parse_date(dob_str: str) -> date:
             yrs = [x for x in parts if x.isdigit() and len(x)==4]
             if days:
                 year = yrs[0] if yrs else datetime.now().year
-                parsed_date = datetime.strptime(f"{year}/{mo:02d}/{days[0]:02d}", "%Y/%m/%d").date()
-                if parsed_date < date.today():
-                    return None
-                return parsed_date
+                return datetime.strptime(f"{year}/{mo:02d}/{days[0]:02d}", "%Y/%m/%d").date()
         # day first
         if parts[i].isdigit() and len(parts[i])<=2:
             day = int(parts[i])
@@ -202,18 +192,12 @@ def parse_date(dob_str: str) -> date:
                 if mo:
                     yrs = [x for x in parts if x.isdigit() and len(x)==4]
                     year = yrs[0] if yrs else datetime.now().year
-                    parsed_date = datetime.strptime(f"{year}/{mo:02d}/{day:02d}", "%Y/%m/%d").date()
-                    if parsed_date < date.today():
-                        return None
-                    return parsed_date
+                    return datetime.strptime(f"{year}/{mo:02d}/{day:02d}", "%Y/%m/%d").date()
     
     # Try standard formats
-    for fmt in ["%Y-%m-%d","%Y%m%d","%Y/%m/%d","%d-%m-%Y","%d/%m/%Y","%m/%d/%Y"]:
+    for fmt in ["%Y-%m-%d", "%Y%m%d", "%Y/%m/%d", "%d-%m-%Y", "%d/%m/%Y", "%m/%d/%Y", "%d-%m-%y", "%d/%m/%y"]:
         try:
-            parsed_date = datetime.strptime(dob_str, fmt).date()
-            if parsed_date < date.today():
-                return None
-            return parsed_date
+            return datetime.strptime(dob_str, fmt).date()
         except ValueError:
             continue
     
