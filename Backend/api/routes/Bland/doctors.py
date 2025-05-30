@@ -211,8 +211,18 @@ async def get_available_booking_dates(request: Request):
                 status_code=404
             )
 
-        # Get unique days
+        # Get unique days and format time slots
         available_days = list(set(day for day, _ in availability))
+        formatted_availability = []
+        for day, time_slot in availability:
+            # Convert time to 12-hour format
+            time_obj = datetime.strptime(str(time_slot), "%H:%M:%S")
+            formatted_time = time_obj.strftime("%I:%M %p")
+            formatted_availability.append({
+                "day": day,
+                "time": formatted_time
+            })
+
         print(f"Available days: {available_days}")
 
         # Generate dates for the next 7 days
@@ -235,7 +245,7 @@ async def get_available_booking_dates(request: Request):
             "debug_info": {
                 "matched_name": matched_name,
                 "available_days": available_days,
-                "raw_availability": availability
+                "availability": formatted_availability
             }
         }, status_code=200)
 
