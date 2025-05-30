@@ -190,22 +190,30 @@ async def get_available_booking_dates(request: Request):
             )
         matched_name, _, _ = result
 
-        # Get doctor's available days
+        # Debug: Print the matched doctor name
+        print(f"Found doctor: {matched_name}")
+
+        # Get doctor's available days with debug info
         cursor.execute("""
-            SELECT DISTINCT day_of_week
+            SELECT DISTINCT da.day_of_week, da.time_slot
             FROM doctors d
             JOIN doctor_availability da ON d.id = da.doctor_id
             WHERE LOWER(d.name) = %s
             AND da.is_available = true;
         """, (matched_name.lower(),))
         
-        available_days = [row[0] for row in cursor.fetchall()]
+        availability = cursor.fetchall()
+        print(f"Raw availability data: {availability}")
         
-        if not available_days:
+        if not availability:
             return JSONResponse(
-                {"error": f"No available days found for Dr. {matched_name}"},
+                {"error": f"No available slots found for Dr. {matched_name}"},
                 status_code=404
             )
+
+        # Get unique days
+        available_days = list(set(day for day, _ in availability))
+        print(f"Available days: {available_days}")
 
         # Generate dates for the next 7 days
         today = datetime.today()
@@ -214,16 +222,25 @@ async def get_available_booking_dates(request: Request):
         for i in range(1, 8):  # Next 7 days
             current_date = today + timedelta(days=i)
             day_name = current_date.strftime("%A")
+            print(f"Checking day {day_name} for date {current_date.strftime('%Y-%m-%d')}")
             
             if day_name in available_days:
                 available_dates.append(current_date.strftime("%Y-%m-%d"))
 
+        print(f"Final available dates: {available_dates}")
+
         return JSONResponse({
             "doctor_name": matched_name,
-            "available_dates": available_dates
+            "available_dates": available_dates,
+            "debug_info": {
+                "matched_name": matched_name,
+                "available_days": available_days,
+                "raw_availability": availability
+            }
         }, status_code=200)
 
     except Exception as e:
+        print(f"Error in fetch-date: {str(e)}")
         return JSONResponse(
             {"error": "Failed to get booking dates", "details": str(e)},
             status_code=500
