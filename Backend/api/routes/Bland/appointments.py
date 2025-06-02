@@ -3,7 +3,7 @@ from fastapi.responses import JSONResponse
 from api.Utils.helper import create_calendar_event,update_calendar_event,format_phone,parse_date,parse_time_input,find_doctor_by_name
 from Google_calender import calendar_service
 from database import conn,cursor
-from TwilioConnet import Client
+from TwilioConnet import client
 
 from datetime import datetime,date
 
@@ -124,7 +124,7 @@ async def book_appointment(request: Request):
                 )
                 conn.commit()
                 message_body = f"Your appointment with {matched_name} from department {doctor_department} has been book on the date {requested_dt.strftime("%Y-%m-%d")} at {requested_dt.strftime("%I:%M %p")} . Please arrive 10 minutes early. -Medical clinic"
-                message = Client.messages.create(
+                message = client.messages.create(
                     to=phone ,
                     from_="+19788008375",
                     body=message_body,
