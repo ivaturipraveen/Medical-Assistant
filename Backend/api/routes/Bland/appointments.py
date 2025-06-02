@@ -288,7 +288,7 @@ async def cancel_appointment(request: Request):
         # Set patient's doctor_id to null
         cursor.execute("""
             UPDATE patients 
-            SET doctor_id = NULL 
+            SET doctor_id = 0 
             WHERE id = %s
         """, (patient_id,))
 
