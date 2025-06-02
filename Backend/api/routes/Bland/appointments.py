@@ -123,7 +123,7 @@ async def book_appointment(request: Request):
                     (calendar_event_id, appointment_id)
                 )
                 conn.commit()
-                message_body = f"Your appointment with {matched_name} from department {doctor_department} has been book on the date {requested_dt.strftime('%Y-%m-%d')} at {requested_dt.strftime('%I:%M %p')}. Please arrive 10 minutes early. -Medical clinic"
+                message_body = f"Your appointment with {matched_name} from {doctor_department} department has been book on the date {requested_dt.strftime('%Y-%m-%d')} at {requested_dt.strftime('%I:%M %p')}. Please arrive 10 minutes early. -Medical clinic"
                 message = client.messages.create(
                     to=phone ,
                     from_="+19788008375",
@@ -318,7 +318,7 @@ async def cancel_appointment(request: Request):
         if patient_phone:
             try:
                 cancel_message_body = (
-                    f"Your appointment with Dr. {matched_name} from department {department} "
+                    f"Your appointment with {matched_name} from {department} department "
                     f"scheduled on {appt_datetime.strftime('%Y-%m-%d')} at {appt_datetime.strftime('%I:%M %p')} "
                     f"has been cancelled successfully. If you have questions, please contact the clinic."
                 )
