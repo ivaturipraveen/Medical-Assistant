@@ -431,3 +431,49 @@ async def get_age_distribution():
             content={"error": str(e)},
             status_code=500
         )
+
+@Router.get("/slots")
+async def get_doctor_slots(doctor_id: int, date: str):
+    try:
+        # Parse date and get abbreviated weekday (e.g., 'Mon')
+        date_obj = datetime.strptime(date, "%Y-%m-%d")
+        day_of_week = date_obj.strftime('%a')  # Matches 'Mon', 'Tue', etc.
+
+        # Fetch available slots for the doctor on that day
+        cursor.execute("""
+            SELECT time_slot FROM doctor_availability
+            WHERE doctor_id = %s AND day_of_week = %s AND is_available = TRUE
+            ORDER BY time_slot;
+        """, (doctor_id, day_of_week))
+        available = cursor.fetchall()
+        available_slots = [t[0].strftime("%H:%M") for t in available]
+
+        if not available_slots:
+            return JSONResponse({
+                "doctor_id": doctor_id,
+                "appointment_date": date,
+                "available_slots": [],
+                "booked_slots": [],
+                "message": "No available slots defined for this doctor on that day."
+            }, status_code=200)
+
+        # Fetch booked slots for the doctor on that day (only 'scheduled')
+        cursor.execute("""
+            SELECT appointment_time FROM appointments
+            WHERE doctor_id = %s AND DATE(appointment_time) = %s AND status = 'scheduled';
+        """, (doctor_id, date))
+        booked = cursor.fetchall()
+        booked_slots = [dt[0].strftime("%H:%M") for dt in booked]
+
+        # Final list of available slots excluding booked
+        filtered_available_slots = [slot for slot in available_slots if slot not in booked_slots]
+
+        return JSONResponse({
+            "doctor_id": doctor_id,
+            "appointment_date": date,  # <- updated field name to be more semantic
+            "available_slots": filtered_available_slots,
+            "booked_slots": booked_slots
+        }, status_code=200)
+
+    except Exception as e:
+        return JSONResponse({"error": str(e)}, status_code=500)
