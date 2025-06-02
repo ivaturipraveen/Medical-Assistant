@@ -1,4 +1,4 @@
-import datetime
+from datetime import datetime
 from fastapi import APIRouter
 from fastapi.responses import JSONResponse
 from database import conn,cursor
@@ -395,43 +395,6 @@ async def get_age_distribution():
             status_code=500
         )
 
-    try:  
-        cursor.execute("""
-            SELECT 
-                CASE 
-                    WHEN age < 18 THEN '0-17'
-                    WHEN age BETWEEN 18 AND 30 THEN '18-30'
-                    WHEN age BETWEEN 31 AND 50 THEN '31-50'
-                    WHEN age BETWEEN 51 AND 70 THEN '51-70'
-                    ELSE '70+'
-                END as age_group,
-                COUNT(*) as patient_count
-            FROM (
-                SELECT 
-                    EXTRACT(YEAR FROM AGE(CURRENT_DATE, dob)) as age
-                FROM patients
-            ) age_calc
-            GROUP BY age_group
-            ORDER BY age_group;
-        """)
-        
-        results = cursor.fetchall()
-
-        
-        return {
-            'data': [
-                {
-                    'ageGroup': row[0],
-                    'count': row[1]
-                }
-                for row in results
-            ]
-        }
-    except Exception as e:
-        return JSONResponse(
-            content={"error": str(e)},
-            status_code=500
-        )
 
 @Router.get("/slots")
 async def get_doctor_slots(doctor_id: int, date: str):
