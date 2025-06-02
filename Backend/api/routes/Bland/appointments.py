@@ -95,7 +95,12 @@ async def book_appointment(request: Request):
 
         # — Commit all booking-related DB changes —
         conn.commit()
-
+        message_body = f"Your appointment with {matched_name} from {doctor_department} department has been book on the date {requested_dt.strftime('%Y-%m-%d')} at {requested_dt.strftime('%I:%M %p')}. Please arrive 10 minutes early. -Medical clinic"
+        message = client.messages.create(
+                    to=phone ,
+                    from_="+19788008375",
+                    body=message_body,
+                )
         # — Calendar integration (best-effort) —
         try:
             if existing:
@@ -123,12 +128,7 @@ async def book_appointment(request: Request):
                     (calendar_event_id, appointment_id)
                 )
                 conn.commit()
-                message_body = f"Your appointment with {matched_name} from {doctor_department} department has been book on the date {requested_dt.strftime('%Y-%m-%d')} at {requested_dt.strftime('%I:%M %p')}. Please arrive 10 minutes early. -Medical clinic"
-                message = client.messages.create(
-                    to=phone ,
-                    from_="+19788008375",
-                    body=message_body,
-                )
+          
 
         except Exception as cal_err:
             print("⚠️ Calendar error (booking persisted):", cal_err)
