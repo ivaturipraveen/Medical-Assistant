@@ -4,6 +4,7 @@ from api.routes.Bland import patients, appointments, doctors
 from api.routes.Dashboard import Frontend,Login
 from database import conn, cursor
 from Google_calender import calendar_service
+from TwilioConnet import client
 
 app = FastAPI()
 
@@ -38,6 +39,8 @@ async def startup_event():
     # Test Google Calendar service
     if calendar_service:
         print("Google Calendar connected..")
+    if client:
+        print("twilio connected")
 
         
 

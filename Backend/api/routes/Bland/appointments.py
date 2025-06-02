@@ -3,6 +3,7 @@ from fastapi.responses import JSONResponse
 from api.Utils.helper import create_calendar_event,update_calendar_event,format_phone,parse_date,parse_time_input,find_doctor_by_name
 from Google_calender import calendar_service
 from database import conn,cursor
+from TwilioConnet import Client
 
 from datetime import datetime,date
 
@@ -33,7 +34,7 @@ async def book_appointment(request: Request):
 
         # Get doctor ID and email
         cursor.execute("""
-            SELECT id, email 
+            SELECT id, email,department 
             FROM doctors 
             WHERE LOWER(name) = %s
         """, (matched_name.lower(),))
@@ -42,7 +43,7 @@ async def book_appointment(request: Request):
         if not row:
             raise HTTPException(404, f"Doctor {matched_name} not found")
         
-        doctor_id, doctor_email = row
+        doctor_id, doctor_email, doctor_department = row
 
         # — Check for existing appointment —
         cursor.execute(
@@ -106,7 +107,6 @@ async def book_appointment(request: Request):
                     duration_minutes=30
                 )
             else:
-                # fetch patient name for summary
                 cursor.execute("SELECT full_name FROM patients WHERE id = %s", (patient_id,))
                 patient_name = cursor.fetchone()[0]
 
@@ -123,6 +123,12 @@ async def book_appointment(request: Request):
                     (calendar_event_id, appointment_id)
                 )
                 conn.commit()
+                message_body = f"Your appointment with {matched_name} from department {doctor_department} has been book on the date {requested_dt.strftime("%Y-%m-%d")} at {requested_dt.strftime("%I:%M %p")} . Please arrive 10 minutes early. -Medical clinic"
+                message = Client.messages.create(
+                    to=phone ,
+                    from_="+19788008375",
+                    body=message_body,
+                )
 
         except Exception as cal_err:
             print("⚠️ Calendar error (booking persisted):", cal_err)
