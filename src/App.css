@@ -2159,7 +2159,7 @@ html, body, #root, .app-container {
   width: 100%;
   margin-bottom: 1rem;
   transition: all 0.3s ease;
-  min-height: 60px;
+  min-height: 90px;
   height: auto;
 }
 
@@ -2170,7 +2170,7 @@ html, body, #root, .app-container {
 }
 
 .doctor-calendar-section:not(.expanded-section) {
-  max-height: 80px;
+  max-height: 110px;
   overflow: hidden;
 }
 
