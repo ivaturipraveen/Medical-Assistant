@@ -9,6 +9,12 @@ from database import conn,cursor
 
 
 Router=APIRouter()
+@Router.post("/receive-name")
+async def receive_name(request: Request):
+    body = await request.json()
+    name = body.get("name")
+    print(f"Received name: {name}")
+    return JSONResponse(content={"message": f"Name {name} received successfully!"}, status_code=200)
 
 @Router.post("/Bland/get-doctors")
 async def get_doctors(request : Request):
