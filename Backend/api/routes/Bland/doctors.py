@@ -14,7 +14,8 @@ async def receive_name(request: Request):
     body = await request.json()
     name = body.get("name")
     print(f"Received name: {name}")
-    return JSONResponse(content={"message": f"Name {name} received successfully!"}, status_code=200)
+    return JSONResponse(content={"dob":"14-08-2005","message": f"Name {name} received successfully!"}, status_code=200)
+    
 
 @Router.post("/Bland/get-doctors")
 async def get_doctors(request : Request):
