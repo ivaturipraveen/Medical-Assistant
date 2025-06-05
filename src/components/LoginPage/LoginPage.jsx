@@ -46,6 +46,7 @@ const LoginPage = ({ onLogin }) => {
   };
 
   return (
+   
     <div className="login-page">
       <div className="login-content unified">
         <div className="login-wrapper">

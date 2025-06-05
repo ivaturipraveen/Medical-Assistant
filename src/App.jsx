@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, lazy, Suspense } from 'react';
+import React, { useState, useEffect, useRef, lazy, Suspense, useMemo } from 'react';
 import {
   CalendarDays,
   Users,
@@ -170,7 +170,7 @@ export default function App() {
 
   const [_patientsCount, setPatientsCount] = useState(null);
   const [_patientRateData, setPatientRateData] = useState(null);
-  const [_loadingPatients, setLoadingPatients] = useState(false);
+  const [loadingPatients, setLoadingPatients] = useState(false);
 
   const [view, setView] = useState('dashboard');
   const [dashboardStats, setDashboardStats] = useState(null);
@@ -208,7 +208,7 @@ export default function App() {
 
   const [patientSearch, setPatientSearch] = useState('');
   const [selectedDepartmentFilter, setSelectedDepartmentFilter] = useState('');
-  const [_filteredPatients, setFilteredPatients] = useState([]);
+  const [filteredPatients, setFilteredPatients] = useState([]);
   const [_isFiltering, _setIsFiltering] = useState(false);
 
   const [departments, setDepartments] = useState([]);
@@ -327,6 +327,13 @@ export default function App() {
     upcoming: 0
   });
 
+  // Add state for appointment trends
+  const [appointmentTrends, setAppointmentTrends] = useState({
+    labels: [],
+    completed: [],
+    upcoming: []
+  });
+
   const handlePrevMonth = () => {
     setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() - 1));
   };
@@ -402,7 +409,9 @@ export default function App() {
             console.log('Patient data structure:', data.patients[0]);
           }
           
-          setPatients(data.patients || []);
+          const patientsData = data.patients || [];
+          setPatients(patientsData);
+          setFilteredPatients(patientsData); // Initialize filteredPatients with all patients
         } catch (error) {
           console.error('Error loading patients:', error);
           setErrors(prev => ({ ...prev, patients: error.message }));
@@ -1074,17 +1083,52 @@ export default function App() {
   };
 
   // Get current date for the appointment date pills
-  const datePills = [];
+  const [visibleDateRange, setVisibleDateRange] = useState(0); // 0 means starting from today
   const today = new Date();
-  
-  for (let i = -1; i < 4; i++) {
-    const date = new Date(today);
-    date.setDate(today.getDate() + i);
-    datePills.push({
-      day: date.getDate(),
-      date: date
-    });
-  }
+
+  // Generate date pills for a week, starting from visibleDateRange
+  const generateDatePills = () => {
+    const pills = [];
+    for (let i = 0; i < 7; i++) {
+      const date = new Date(today);
+      date.setDate(today.getDate() + visibleDateRange + i);
+      pills.push({
+        day: date.getDate(),
+        date: date,
+        isToday: date.toDateString() === today.toDateString()
+      });
+    }
+    return pills;
+  };
+
+  // Use useMemo to regenerate date pills when visibleDateRange changes
+  const datePills = useMemo(() => generateDatePills(), [visibleDateRange]);
+
+  // Function to navigate to previous week
+  const navigateToPreviousWeek = () => {
+    setVisibleDateRange(visibleDateRange - 7);
+    // If we're moving back and the selected date is now out of view, reset it
+    if (selectedDateIndex >= 7) {
+      setSelectedDateIndex(0);
+    }
+  };
+
+  // Function to navigate to next week
+  const navigateToNextWeek = () => {
+    setVisibleDateRange(visibleDateRange + 7);
+    setSelectedDateIndex(0); // Reset selection when moving to next week
+  };
+
+  // Find today's index in the current visible range
+  const todayIndex = datePills.findIndex(pill => pill.isToday);
+  // If today is visible, select it by default, otherwise select first day
+  useEffect(() => {
+    if (todayIndex >= 0) {
+      setSelectedDateIndex(todayIndex);
+    } else {
+      setSelectedDateIndex(0);
+    }
+  }, [visibleDateRange, todayIndex, selectedDateIndex]);
 
   // Render My Patients section for dashboard
   const renderMyPatients = () => {
@@ -1319,13 +1363,19 @@ export default function App() {
                 <div className="appointments-header">
                   <h3>Appointments</h3>
                   <div className="appointments-date">
-                    <span>{format(new Date(), 'MMMM yyyy')}</span>
+                    {datePills[0].date.getMonth() !== datePills[datePills.length - 1].date.getMonth() ? (
+                      <span>
+                        {format(datePills[0].date, 'MMM')} - {format(datePills[datePills.length - 1].date, 'MMM yyyy')}
+                      </span>
+                    ) : (
+                      <span>{format(datePills[0].date, 'MMMM yyyy')}</span>
+                    )}
                     <ChevronDown size={16} />
                   </div>
                 </div>
                 
                 <div className="date-selector">
-                  <button className="date-nav-btn" onClick={() => setSelectedDateIndex(Math.max(0, selectedDateIndex - 1))}>
+                  <button className="date-nav-btn" onClick={navigateToPreviousWeek}>
                     <ChevronLeft size={18} />
                   </button>
                   
@@ -1333,7 +1383,7 @@ export default function App() {
                     {datePills.map((pill, index) => (
                       <div 
                         key={index} 
-                        className={`date-pill ${index === selectedDateIndex ? 'active' : ''}`}
+                        className={`date-pill ${index === selectedDateIndex ? 'active' : ''} ${pill.isToday ? 'today' : ''}`}
                         onClick={() => setSelectedDateIndex(index)}
                       >
                         <span className="day">{pill.day}</span>
@@ -1341,7 +1391,7 @@ export default function App() {
                     ))}
                   </div>
                   
-                  <button className="date-nav-btn" onClick={() => setSelectedDateIndex(Math.min(datePills.length - 1, selectedDateIndex + 1))}>
+                  <button className="date-nav-btn" onClick={navigateToNextWeek}>
                     <ChevronRight size={18} />
                   </button>
                 </div>
@@ -1350,10 +1400,18 @@ export default function App() {
               </div>
             </div>
 
-            {/* Doctors by Department AND My Patients (side by side) */}
+            {/* New Patients AND Doctors by Department (side by side) */}
             <div className="dashboard-main-content">
+              {/* My Patients Section */}
+              <div className="my-patients-section">
+                <div className="section-header">
+                  <h3>New Patients</h3>
+                </div>
+                {renderMyPatients()}
+              </div>
+              
               {/* Doctors by Department Chart */}
-              <div className="visitors-section patient-distribution-chart">
+              <div className="visitors-section">
                 <div className="section-header">
                   <h3>Doctors by Department</h3>
                   <button
@@ -1443,13 +1501,186 @@ export default function App() {
                   </div>
                 )}
               </div>
+            </div>
 
-              {/* My Patients Section */}
-              <div className="my-patients-section">
+            {/* Appointment Trends */}
+            <div className="dashboard-main-content">
+              {/* Appointment Trends Chart */}
+              <div className="appointment-trends-chart">
                 <div className="section-header">
-                  <h3>My Patients</h3>
+                  <h3>Appointment Trends</h3>
+                  <button
+                    className="refresh-chart-btn"
+                    onClick={() => {
+                      // Refresh appointment trends
+                      setLoadingNewDashboard(prev => ({ ...prev, patientStats: true }));
+                      fetchWithRetry('https://medical-assistant1.onrender.com/appointments')
+                        .then(data => {
+                          if (!data.appointments) throw new Error('No appointments data available');
+                          
+                          const today = new Date();
+                          today.setHours(0, 0, 0, 0);
+                          
+                          // Generate trend data for the past 7 days
+                          const trendLabels = [];
+                          const completedTrend = [];
+                          const upcomingTrend = [];
+
+                          // Get dates for the past 7 days
+                          for (let i = 6; i >= 0; i--) {
+                            const date = new Date();
+                            date.setDate(date.getDate() - i);
+                            date.setHours(0, 0, 0, 0);
+                            
+                            const dateStr = format(date, 'MMM dd');
+                            trendLabels.push(dateStr);
+                            
+                            // Count appointments for this date
+                            let completedForDay = 0;
+                            let upcomingForDay = 0;
+                            
+                            data.appointments.forEach(appointment => {
+                              const appointmentDate = new Date(appointment.appointment_time);
+                              appointmentDate.setHours(0, 0, 0, 0);
+                              
+                              // Check if appointment is on this date
+                              if (appointmentDate.getTime() === date.getTime()) {
+                                if (date < today) {
+                                  completedForDay++;
+                                } else {
+                                  upcomingForDay++;
+                                }
+                              }
+                            });
+                            
+                            completedTrend.push(completedForDay);
+                            upcomingTrend.push(upcomingForDay);
+                          }
+                          
+                          setAppointmentTrends({
+                            labels: trendLabels,
+                            completed: completedTrend,
+                            upcoming: upcomingTrend
+                          });
+                        })
+                        .catch(error => {
+                          console.error('Error fetching appointment trends:', error);
+                        })
+                        .finally(() => {
+                          setLoadingNewDashboard(prev => ({ ...prev, patientStats: false }));
+                        });
+                    }}
+                  >
+                    <RefreshCw size={16} />
+                  </button>
                 </div>
-                {renderMyPatients()}
+                
+                <div className="chart-content">
+                  {loadingNewDashboard.patientStats ? (
+                    <div className="loading-state">Loading appointment trends...</div>
+                  ) : appointmentTrends.labels.length === 0 ? (
+                    <div className="no-data-message">No appointment trend data available</div>
+                  ) : (
+                    <>
+                      <div className="line-chart-container">
+                        <Suspense fallback={<div className="chart-loading">Loading chart...</div>}>
+                          <LazyLine
+                            data={{
+                              labels: appointmentTrends.labels,
+                              datasets: [
+                                {
+                                  label: 'Done',
+                                  data: appointmentTrends.completed,
+                                  borderColor: '#10b981',
+                                  backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                                  borderWidth: 2,
+                                  fill: true,
+                                  tension: 0.4,
+                                  pointBackgroundColor: '#10b981',
+                                  pointRadius: 3,
+                                  pointHoverRadius: 5
+                                },
+                                {
+                                  label: 'Booked',
+                                  data: appointmentTrends.upcoming,
+                                  borderColor: '#f59e0b',
+                                  backgroundColor: 'rgba(245, 158, 11, 0.1)',
+                                  borderWidth: 2,
+                                  fill: true,
+                                  tension: 0.4,
+                                  pointBackgroundColor: '#f59e0b',
+                                  pointRadius: 3,
+                                  pointHoverRadius: 5
+                                }
+                              ]
+                            }}
+                            options={{
+                              responsive: true,
+                              maintainAspectRatio: false,
+                              plugins: {
+                                legend: {
+                                  position: 'top',
+                                  align: 'end',
+                                  labels: {
+                                    boxWidth: 10,
+                                    usePointStyle: true,
+                                    pointStyle: 'circle',
+                                    font: {
+                                      size: 11
+                                    }
+                                  }
+                                },
+                                tooltip: {
+                                  mode: 'index',
+                                  intersect: false,
+                                  backgroundColor: 'rgba(255, 255, 255, 0.9)',
+                                  titleColor: '#1e293b',
+                                  bodyColor: '#475569',
+                                  borderColor: '#e2e8f0',
+                                  borderWidth: 1,
+                                  padding: 8,
+                                  boxPadding: 4,
+                                  usePointStyle: true,
+                                  callbacks: {
+                                    label: function(context) {
+                                      return `${context.dataset.label}: ${context.raw}`;
+                                    }
+                                  }
+                                }
+                              },
+                              scales: {
+                                x: {
+                                  grid: {
+                                    display: false
+                                  },
+                                  ticks: {
+                                    color: '#64748b',
+                                    font: {
+                                      size: 10
+                                    }
+                                  }
+                                },
+                                y: {
+                                  beginAtZero: true,
+                                  grid: {
+                                    color: '#f1f5f9'
+                                  },
+                                  ticks: {
+                                    precision: 0,
+                                    color: '#64748b',
+                                    font: {
+                                      size: 10
+                                    }
+                                  }
+                                }
+                              }
+                            }}
+                          />
+                        </Suspense>
+                      </div>
+                    </>
+                  )}
+                </div>
               </div>
             </div>
           </>
@@ -1640,7 +1871,10 @@ export default function App() {
               <>
                 <button 
                   className="back-button"
-                  onClick={() => setSelectedDepartment('')}
+                  onClick={() => {
+                    setSelectedDepartment('');
+                    setExpandedDoctorId(null);
+                  }}
                   title="Back to departments"
                 >
                   <ArrowLeft size={20} />
@@ -1671,7 +1905,10 @@ export default function App() {
                     <div
                       key={department}
                       className="department-card"
-                      onClick={() => setSelectedDepartment(department)}
+                      onClick={() => {
+                        setSelectedDepartment(department);
+                        setExpandedDoctorId(null);
+                      }}
                     >
                       <div className="department-icon">
                         {departmentIcons[department] || <Activity size={18} />}
@@ -1697,74 +1934,90 @@ export default function App() {
 
               {Object.keys(appointmentsByDoctor).length > 0 ? (
                 <div className="doctors-appointments">
-                  {Object.entries(appointmentsByDoctor).map(([doctorName, dateAppointments]) => (
-                    <div key={doctorName} className="doctor-calendar-section" ref={expandedDoctorId === doctorName ? calendarRef : null}>
+                  {Object.entries(appointmentsByDoctor).map(([doctorName, dateAppointments]) => {
+                    // Check if this doctor is the expanded one
+                    const isExpanded = expandedDoctorId === doctorName;
+                    
+                    return (
                       <div 
-                        className="doctor-section-header"
-                        onClick={() => setExpandedDoctorId(expandedDoctorId === doctorName ? null : doctorName)}
+                        key={doctorName} 
+                        className={`doctor-calendar-section ${isExpanded ? 'expanded-section' : ''}`}
                       >
-                        <div className="doctor-info">
-                          <div className="doctor-card-avatar">
-                            <FaUserMd size={24} />
+                        <div 
+                          className="doctor-section-header"
+                          onClick={() => {
+                            // If clicking on the currently expanded doctor, collapse it
+                            // Otherwise, expand this doctor and collapse any others
+                            setExpandedDoctorId(prevId => prevId === doctorName ? null : doctorName);
+                          }}
+                        >
+                          <div className="doctor-info">
+                            <div className="doctor-card-avatar">
+                              <FaUserMd size={24} />
+                            </div>
+                            <h4>Dr. {doctorName}</h4>
                           </div>
-                          <h4>Dr. {doctorName}</h4>
+                          <ChevronDown 
+                            size={20} 
+                            className={`chevron-icon ${isExpanded ? 'expanded' : ''}`} 
+                          />
                         </div>
-                        <ChevronDown 
-                          size={20} 
-                          className={`chevron-icon ${expandedDoctorId === doctorName ? 'expanded' : ''}`} 
-                        />
-                      </div>
 
-                      <div className={`calendar-container ${expandedDoctorId === doctorName ? 'expanded' : ''}`}>
-                        <div className="calendar-header">
-                          <button className="month-nav-btn" onClick={handlePrevMonth}>
-                            <ChevronLeft size={20} />
-                          </button>
-                          <h3>{currentMonth.toLocaleString('default', { month: 'long', year: 'numeric' })}</h3>
-                          <button className="month-nav-btn" onClick={handleNextMonth}>
-                            <ChevronRight size={20} />
-                          </button>
-                        </div>
-                        <div className="calendar-weekdays">
-                          {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((day, index) => (
-                            <div key={index} className="weekday">{day}</div>
-                          ))}
-                        </div>
-                        <div className="calendar-grid">
-                          {calendarDays.map((day, index) => {
-                            if (!day) return <div key={index} className="calendar-day empty"></div>;
-                            
-                            const date = new Date(
-                              currentMonth.getFullYear(),
-                              currentMonth.getMonth(),
-                              day
-                            );
-                            // Adjust for timezone to prevent date shifting
-                            const dateStr = new Date(date.getTime() - (date.getTimezoneOffset() * 60000))
-                              .toISOString().split('T')[0];
-                            const dayAppointments = dateAppointments[dateStr] || [];
-                            const hasAppointments = dayAppointments.length > 0;
-                            const isToday = new Date().toLocaleDateString() === date.toLocaleDateString();
+                        {/* Always render the calendar container but only show it when expanded */}
+                        <div 
+                          className={`calendar-container ${isExpanded ? 'expanded' : ''}`}
+                          ref={calendarRef}
+                        >
+                            <div className="calendar-header">
+                              <button className="month-nav-btn" onClick={handlePrevMonth}>
+                                <ChevronLeft size={20} />
+                              </button>
+                              <h3>{currentMonth.toLocaleString('default', { month: 'long', year: 'numeric' })}</h3>
+                              <button className="month-nav-btn" onClick={handleNextMonth}>
+                                <ChevronRight size={20} />
+                              </button>
+                            </div>
+                            <div className="calendar-weekdays">
+                              {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((day, index) => (
+                                <div key={index} className="weekday">{day}</div>
+                              ))}
+                            </div>
+                            <div className="calendar-grid">
+                              {calendarDays.map((day, index) => {
+                                if (!day) return <div key={index} className="calendar-day empty"></div>;
+                                
+                                const date = new Date(
+                                  currentMonth.getFullYear(),
+                                  currentMonth.getMonth(),
+                                  day
+                                );
+                                // Adjust for timezone to prevent date shifting
+                                const dateStr = new Date(date.getTime() - (date.getTimezoneOffset() * 60000))
+                                  .toISOString().split('T')[0];
+                                const dayAppointments = dateAppointments[dateStr] || [];
+                                const hasAppointments = dayAppointments.length > 0;
+                                const isToday = new Date().toLocaleDateString() === date.toLocaleDateString();
 
-                            return (
-                              <div 
-                                key={index} 
-                                className={`calendar-day ${isToday ? 'current-day' : ''} ${hasAppointments ? 'clickable' : ''}`}
-                                onClick={(e) => handleDateClick(doctorName, dateStr, dayAppointments, e)}
-                              >
-                                <span className="day-number">{day}</span>
-                                {hasAppointments && (
-                                  <div className="appointment-indicators">
-                                    <div className="appointment-dot"></div>
+                                return (
+                                  <div 
+                                    key={index} 
+                                    className={`calendar-day ${isToday ? 'current-day' : ''} ${hasAppointments ? 'clickable' : ''}`}
+                                    onClick={(e) => handleDateClick(doctorName, dateStr, dayAppointments, e)}
+                                  >
+                                    <span className="day-number">{day}</span>
+                                    {hasAppointments && (
+                                      <div className="appointment-indicators">
+                                        <div className="appointment-dot"></div>
+                                      </div>
+                                    )}
                                   </div>
-                                )}
-                              </div>
-                            );
-                          })}
-                        </div>
+                                );
+                              })}
+                            </div>
+                          </div>
                       </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               ) : (
                 <div className="no-appointments">
@@ -1933,127 +2186,6 @@ export default function App() {
               )}
             </div>
           )}
-
-          {/* Doctor Profile Modal */}
-          <div 
-            className={`modal-overlay ${selectedDoctor ? 'open' : ''}`} 
-            onClick={() => setSelectedDoctor(null)}
-          >
-            <div className="doctor-profile-modal" onClick={e => e.stopPropagation()}>
-              <button className="modal-close-btn" onClick={() => setSelectedDoctor(null)}>
-                <X size={24} />
-              </button>
-              
-              {selectedDoctor && (
-                <>
-                  <div className="doctor-profile-header">
-                    <div className="doctor-profile-avatar">
-                      <FaUserMd size={32} />
-                    </div>
-                    <div className="doctor-profile-info">
-                      <h2>{selectedDoctor.name}</h2>
-                      <p className="doctor-specialization">{selectedDoctor.department}</p>
-                      <p className="doctor-qualification">MD, MBBS</p>
-                    </div>
-                  </div>
-
-                  <div className="doctor-profile-content">
-                    <div className="profile-section">
-                      <h3>About</h3>
-                      <p>{getDoctorProfessionalDetails(selectedDoctor).about}</p>
-                    </div>
-
-                    <div className="profile-section">
-                      <h3>Professional Details</h3>
-                      <div className="details-grid">
-                        <div className="detail-item">
-                          <span className="detail-label">Experience</span>
-                          <span className="detail-value">10+ years</span>
-                        </div>
-                        <div className="detail-item">
-                          <span className="detail-label">Registration No.</span>
-                          <span className="detail-value">{getDoctorProfessionalDetails(selectedDoctor).registrationNumber}</span>
-                        </div>
-                        <div className="detail-item">
-                          <span className="detail-label">Languages</span>
-                          <span className="detail-value">English, Hindi</span>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="profile-section">
-                      <h3>Education & Training</h3>
-                      <div className="education-list">
-                        {getDoctorProfessionalDetails(selectedDoctor).education.map((edu, index) => (
-                          <div key={index} className="education-item">
-                            <div className="education-degree">{edu.degree}</div>
-                            <div className="education-institution">{edu.institution}</div>
-                            <div className="education-year">{edu.year}</div>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-
-                    <div className="profile-section">
-                      <h3>Certifications</h3>
-                      <ul className="certifications-list">
-                        {getDoctorProfessionalDetails(selectedDoctor).certifications.map((cert, index) => (
-                          <li key={index}>{cert}</li>
-                        ))}
-                      </ul>
-                    </div>
-
-                    <div className="profile-section">
-                      <h3>Areas of Expertise</h3>
-                      <div className="expertise-tags">
-                        {getDoctorProfessionalDetails(selectedDoctor).expertise.map((exp, index) => (
-                          <span key={index} className="expertise-tag">{exp}</span>
-                        ))}
-                      </div>
-                    </div>
-
-                    <div className="profile-section">
-                      <h3>Available Timings</h3>
-                      <div className="timings-grid">
-                        {doctorAvailability ? (
-                          Object.entries(doctorAvailability).map(([day, times]) => (
-                            <div key={day} className="timing-item">
-                              <div className="timing-day">
-                                {day === 'Mon' ? 'Monday' :
-                                 day === 'Tue' ? 'Tuesday' :
-                                 day === 'Wed' ? 'Wednesday' :
-                                 day === 'Thu' ? 'Thursday' :
-                                 day === 'Fri' ? 'Friday' :
-                                 day === 'Sat' ? 'Saturday' : 'Sunday'}
-                              </div>
-                              <div className="timing-slots">
-                                {times ? (
-                                  <span className="timing-slot">
-                                    {`${times.start} - ${times.end}`}
-                                  </span>
-                                ) : (
-                                  <span className="timing-closed">Closed</span>
-                                )}
-                              </div>
-                            </div>
-                          ))
-                        ) : (
-                          ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'].map(day => (
-                            <div key={day} className="timing-item">
-                              <div className="timing-day">{day}</div>
-                              <div className="timing-slots">
-                                <span className="timing-closed">Loading...</span>
-                              </div>
-                            </div>
-                          ))
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                </>
-              )}
-            </div>
-          </div>
         </div>
       );
     }
@@ -2102,7 +2234,7 @@ export default function App() {
                 </div>
               </div>
 
-              {_loadingPatients ? (
+              {loadingPatients ? (
                 <div className="loading-state">Loading patients...</div>
               ) : errors.patients ? (
                 <div className="error-message">{errors.patients}</div>
@@ -2118,7 +2250,7 @@ export default function App() {
                       </tr>
                     </thead>
                     <tbody>
-                      {patients.map(patient => (
+                      {filteredPatients.map(patient => (
                         <tr key={patient.id || patient._id}>
                           <td>{patient.full_name}</td>
                           <td>{patient.dob || 'N/A'}</td>
@@ -2132,7 +2264,7 @@ export default function App() {
                       ))}
                     </tbody>
                   </table>
-                  {patients.length === 0 && (
+                  {filteredPatients.length === 0 && (
                     <div className="no-results">
                       No patients found matching your search criteria
                     </div>
@@ -2153,16 +2285,34 @@ export default function App() {
 
   useEffect(() => {
     const handleClickOutside = (event) => {
-      if (calendarRef.current && !calendarRef.current.contains(event.target)) {
-        setExpandedDoctorId(null);
+      // Only check for outside clicks when a calendar is expanded
+      if (expandedDoctorId && calendarRef.current && !calendarRef.current.contains(event.target)) {
+        // Check if the click was outside the doctor section header as well
+        const doctorSectionHeaders = document.querySelectorAll('.doctor-section-header');
+        let clickedOnHeader = false;
+        
+        doctorSectionHeaders.forEach(header => {
+          if (header.contains(event.target)) {
+            clickedOnHeader = true;
+          }
+        });
+        
+        // Only collapse if the click was not on a doctor section header
+        if (!clickedOnHeader) {
+          setExpandedDoctorId(null);
+        }
       }
     };
 
-    document.addEventListener('mousedown', handleClickOutside);
+    // Only add the event listener when a calendar is expanded
+    if (expandedDoctorId) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+    
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
     };
-  }, []);
+  }, [expandedDoctorId]);
 
   // Handle global search
   const handleGlobalSearch = (searchTerm) => {
@@ -2419,11 +2569,58 @@ export default function App() {
           completed: completedCount,
           upcoming: upcomingCount
         });
+
+        // Generate trend data for the past 7 days
+        const trendLabels = [];
+        const completedTrend = [];
+        const upcomingTrend = [];
+
+        // Get dates for the past 7 days
+        for (let i = 6; i >= 0; i--) {
+          const date = new Date();
+          date.setDate(date.getDate() - i);
+          date.setHours(0, 0, 0, 0);
+          
+          const dateStr = format(date, 'MMM dd');
+          trendLabels.push(dateStr);
+          
+          // Count appointments for this date
+          let completedForDay = 0;
+          let upcomingForDay = 0;
+          
+          data.appointments.forEach(appointment => {
+            const appointmentDate = new Date(appointment.appointment_time);
+            appointmentDate.setHours(0, 0, 0, 0);
+            
+            // Check if appointment is on this date
+            if (appointmentDate.getTime() === date.getTime()) {
+              if (date < today) {
+                completedForDay++;
+              } else {
+                upcomingForDay++;
+              }
+            }
+          });
+          
+          completedTrend.push(completedForDay);
+          upcomingTrend.push(upcomingForDay);
+        }
+        
+        setAppointmentTrends({
+          labels: trendLabels,
+          completed: completedTrend,
+          upcoming: upcomingTrend
+        });
       } catch (error) {
         console.error('Error fetching appointment status counts:', error);
         setAppointmentsStatus({
           completed: 0,
           upcoming: 0
+        });
+        setAppointmentTrends({
+          labels: [],
+          completed: [],
+          upcoming: []
         });
       } finally {
         setLoadingNewDashboard(prev => ({ ...prev, patientStats: false }));
@@ -2480,6 +2677,17 @@ export default function App() {
       fetchDoctorsByDepartment();
     }
   }, [view, showLogin]);
+
+  // Add a useEffect to scroll to the expanded doctor section
+  useEffect(() => {
+    if (expandedDoctorId && calendarRef.current) {
+      // Scroll the expanded section into view with smooth behavior
+      calendarRef.current.scrollIntoView({ 
+        behavior: 'smooth', 
+        block: 'nearest'
+      });
+    }
+  }, [expandedDoctorId]);
 
   if (showLogin) {
     return <LoginPage onLogin={handleLogin} />;
@@ -2642,6 +2850,127 @@ export default function App() {
           {error && <div className="error-alert">{error}</div>}
           {renderMainContent()}
         </main>
+
+        {/* Doctor Profile Modal - Moved outside main-content to slide in from body-container */}
+        <div 
+          className={`modal-overlay ${selectedDoctor ? 'open' : ''}`} 
+          onClick={() => setSelectedDoctor(null)}
+        >
+          <div className="doctor-profile-modal" onClick={e => e.stopPropagation()}>
+            <button className="modal-close-btn" onClick={() => setSelectedDoctor(null)}>
+              <X size={24} />
+            </button>
+            
+            {selectedDoctor && (
+              <>
+                <div className="doctor-profile-header">
+                  <div className="doctor-profile-avatar">
+                    <FaUserMd size={32} />
+                  </div>
+                  <div className="doctor-profile-info">
+                    <h2>{selectedDoctor.name}</h2>
+                    <p className="doctor-specialization">{selectedDoctor.department}</p>
+                    <p className="doctor-qualification">MD, MBBS</p>
+                  </div>
+                </div>
+
+                <div className="doctor-profile-content">
+                  <div className="profile-section">
+                    <h3>About</h3>
+                    <p>{getDoctorProfessionalDetails(selectedDoctor).about}</p>
+                  </div>
+
+                  <div className="profile-section">
+                    <h3>Professional Details</h3>
+                    <div className="details-grid">
+                      <div className="detail-item">
+                        <span className="detail-label">Experience</span>
+                        <span className="detail-value">10+ years</span>
+                      </div>
+                      <div className="detail-item">
+                        <span className="detail-label">Registration No.</span>
+                        <span className="detail-value">{getDoctorProfessionalDetails(selectedDoctor).registrationNumber}</span>
+                      </div>
+                      <div className="detail-item">
+                        <span className="detail-label">Languages</span>
+                        <span className="detail-value">English, Hindi</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="profile-section">
+                    <h3>Education & Training</h3>
+                    <div className="education-list">
+                      {getDoctorProfessionalDetails(selectedDoctor).education.map((edu, index) => (
+                        <div key={index} className="education-item">
+                          <div className="education-degree">{edu.degree}</div>
+                          <div className="education-institution">{edu.institution}</div>
+                          <div className="education-year">{edu.year}</div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="profile-section">
+                    <h3>Certifications</h3>
+                    <ul className="certifications-list">
+                      {getDoctorProfessionalDetails(selectedDoctor).certifications.map((cert, index) => (
+                        <li key={index}>{cert}</li>
+                      ))}
+                    </ul>
+                  </div>
+
+                  <div className="profile-section">
+                    <h3>Areas of Expertise</h3>
+                    <div className="expertise-tags">
+                      {getDoctorProfessionalDetails(selectedDoctor).expertise.map((exp, index) => (
+                        <span key={index} className="expertise-tag">{exp}</span>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="profile-section">
+                    <h3>Available Timings</h3>
+                    <div className="timings-grid">
+                      {doctorAvailability ? (
+                        Object.entries(doctorAvailability).map(([day, times]) => (
+                          <div key={day} className="timing-item">
+                            <div className="timing-day">
+                              {day === 'Mon' ? 'Monday' :
+                               day === 'Tue' ? 'Tuesday' :
+                               day === 'Wed' ? 'Wednesday' :
+                               day === 'Thu' ? 'Thursday' :
+                               day === 'Fri' ? 'Friday' :
+                               day === 'Sat' ? 'Saturday' : 'Sunday'}
+                            </div>
+                            <div className="timing-slots">
+                              {times ? (
+                                <span className="timing-slot">
+                                  {`${times.start} - ${times.end}`}
+                                </span>
+                              ) : (
+                                <span className="timing-closed">Closed</span>
+                              )}
+                            </div>
+                          </div>
+                        ))
+                      ) : (
+                        ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'].map(day => (
+                          <div key={day} className="timing-item">
+                            <div className="timing-day">{day}</div>
+                            <div className="timing-slots">
+                              <span className="timing-closed">Loading...</span>
+                            </div>
+                          </div>
+                        ))
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </>
+            )}
+          </div>
+        </div>
       </div>
     </div>
   );

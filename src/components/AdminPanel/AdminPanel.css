@@ -231,18 +231,38 @@
 .doctor-profile-modal {
   position: fixed;
   top: 0;
-  right: -100%;
+  right: 0;
   width: 400px;
   height: 100vh;
   background: white;
   box-shadow: -4px 0 15px rgba(0, 0, 0, 0.1);
   z-index: 1001;
-  transition: right 0.3s ease;
   overflow-y: auto;
+  transform: translateX(100%);
+  transition: transform 0.3s ease-in-out;
 }
 
 .modal-overlay.open .doctor-profile-modal {
-  right: 0;
+  transform: translateX(0);
+}
+
+/* Ensure the modal is positioned relative to the viewport, not the container */
+@keyframes slideInFromRight {
+  from {
+    transform: translateX(100%);
+  }
+  to {
+    transform: translateX(0);
+  }
+}
+
+@keyframes slideOutToRight {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(100%);
+  }
 }
 
 .modal-close-btn {
@@ -349,6 +369,11 @@
 @media (max-width: 768px) {
   .doctor-profile-modal {
     width: 100%;
+    transform: translateX(100%);
+  }
+  
+  .modal-overlay.open .doctor-profile-modal {
+    transform: translateX(0);
   }
 }
 
