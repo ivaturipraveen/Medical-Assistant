@@ -7,7 +7,7 @@ import {
   User2,
   LayoutDashboard,
   ArrowLeft,
-  Search,
+  Search, 
   Heart,
   Activity,
   Brain,
@@ -312,7 +312,8 @@ export default function App() {
 
   const [doctorAvailability, setDoctorAvailability] = useState(null);
 
-  const calendarRef = useRef(null);
+  // Updated to use a ref map instead of a single ref
+  const calendarRefs = useRef({});
 
   const [globalSearch, setGlobalSearch] = useState('');
   const [searchResults, setSearchResults] = useState([]);
@@ -1400,7 +1401,7 @@ export default function App() {
               </div>
             </div>
 
-            {/* New Patients AND Doctors by Department (side by side) */}
+            {/* New Patients AND Appointment Trends (side by side) */}
             <div className="dashboard-main-content">
               {/* My Patients Section */}
               <div className="my-patients-section">
@@ -1410,101 +1411,6 @@ export default function App() {
                 {renderMyPatients()}
               </div>
               
-              {/* Doctors by Department Chart */}
-              <div className="visitors-section">
-                <div className="section-header">
-                  <h3>Doctors by Department</h3>
-                  <button
-                    className="refresh-chart-btn"
-                    onClick={() => {
-                      // Refresh doctors by department
-                      setLoadingDoctorsDepartments(true);
-                      fetchWithRetry('https://medical-assistant1.onrender.com/doctors')
-                        .then(data => {
-                          if (!data.doctors) throw new Error('No doctors data available');
-
-                          // Count doctors by department and filter out temp entries
-                          const departmentCounts = {};
-                          data.doctors.forEach(doctor => {
-                            const department = doctor.department;
-                            if (
-                              department &&
-                              !department.toLowerCase().includes('temp') &&
-                              !doctor.name.toLowerCase().includes('temp')
-                            ) {
-                              departmentCounts[department] = (departmentCounts[department] || 0) + 1;
-                            }
-                          });
-
-                          const sortedDepartments = Object.entries(departmentCounts)
-                            .sort((a, b) => b[1] - a[1])
-                            .map(([name, count]) => ({ name, count }));
-
-                          setDoctorsByDepartment(sortedDepartments);
-                        })
-                        .catch(error => {
-                          console.error('Error fetching doctors by department:', error);
-                          setDoctorsByDepartment([]);
-                        })
-                        .finally(() => {
-                          setLoadingDoctorsDepartments(false);
-                        });
-                    }}
-                  >
-                    <RefreshCw size={16} />
-                  </button>
-                </div>
-
-                {loadingDoctorsDepartments ? (
-                  <div className="loading-state">Loading department statistics...</div>
-                ) : doctorsByDepartment.length === 0 ? (
-                  <div className="no-data-message">No department data available</div>
-                ) : (
-                  <div className="doctors-by-department-chart chart-content">
-                    <LazyBar
-                      data={{
-                        labels: doctorsByDepartment.map(item => item.name),
-                        datasets: [
-                          {
-                            data: doctorsByDepartment.map(item => item.count),
-                            backgroundColor: '#0284c7',
-                            borderRadius: 6,
-                            maxBarThickness: 35
-                          }
-                        ]
-                      }}
-                      options={{
-                        responsive: true,
-                        maintainAspectRatio: false,
-                        plugins: {
-                          legend: { display: false },
-                          tooltip: {
-                            callbacks: {
-                              label: function (context) {
-                                return `${context.raw} doctor${context.raw !== 1 ? 's' : ''}`;
-                              }
-                            }
-                          }
-                        },
-                        scales: {
-                          x: {
-                            grid: { display: false },
-                            ticks: { precision: 0 }
-                          },
-                          y: {
-                            beginAtZero: true,
-                            grid: { color: '#f0f0f0' }
-                          }
-                        }
-                      }}
-                    />
-                  </div>
-                )}
-              </div>
-            </div>
-
-            {/* Appointment Trends */}
-            <div className="dashboard-main-content">
               {/* Appointment Trends Chart */}
               <div className="appointment-trends-chart">
                 <div className="section-header">
@@ -1865,16 +1771,13 @@ export default function App() {
       };
 
       return (
-        <div className="appointments-view">
+        <>
           <div className="appointments-header">
             {selectedDepartment ? (
               <>
                 <button 
                   className="back-button"
-                  onClick={() => {
-                    setSelectedDepartment('');
-                    setExpandedDoctorId(null);
-                  }}
+                  onClick={() => setSelectedDepartment('')}
                   title="Back to departments"
                 >
                   <ArrowLeft size={20} />
@@ -1905,10 +1808,7 @@ export default function App() {
                     <div
                       key={department}
                       className="department-card"
-                      onClick={() => {
-                        setSelectedDepartment(department);
-                        setExpandedDoctorId(null);
-                      }}
+                      onClick={() => setSelectedDepartment(department)}
                     >
                       <div className="department-icon">
                         {departmentIcons[department] || <Activity size={18} />}
@@ -1945,10 +1845,15 @@ export default function App() {
                       >
                         <div 
                           className="doctor-section-header"
-                          onClick={() => {
+                          onClick={(e) => {
+                            // Prevent event from bubbling up
+                            e.stopPropagation();
+
                             // If clicking on the currently expanded doctor, collapse it
                             // Otherwise, expand this doctor and collapse any others
-                            setExpandedDoctorId(prevId => prevId === doctorName ? null : doctorName);
+                            setExpandedDoctorId(prevId => 
+                              prevId === doctorName ? null : doctorName
+                            );
                           }}
                         >
                           <div className="doctor-info">
@@ -1963,11 +1868,17 @@ export default function App() {
                           />
                         </div>
 
-                        {/* Always render the calendar container but only show it when expanded */}
-                        <div 
-                          className={`calendar-container ${isExpanded ? 'expanded' : ''}`}
-                          ref={calendarRef}
-                        >
+                        {/* Only render the calendar container if this doctor is expanded */}
+                        {isExpanded && (
+                          <div 
+                            className="calendar-container expanded"
+                            ref={node => {
+                              // Store the ref in the calendarRefs object using the doctor's name as key
+                              if (node) {
+                                calendarRefs.current[doctorName] = node;
+                              }
+                            }}
+                          >
                             <div className="calendar-header">
                               <button className="month-nav-btn" onClick={handlePrevMonth}>
                                 <ChevronLeft size={20} />
@@ -2015,6 +1926,7 @@ export default function App() {
                               })}
                             </div>
                           </div>
+                        )}
                       </div>
                     );
                   })}
@@ -2060,7 +1972,7 @@ export default function App() {
               )}
             </div>
           )}
-        </div>
+        </>
       );
     }
     return null;
@@ -2095,9 +2007,15 @@ export default function App() {
     let filtered = [...allDoctors];
     
     if (search) {
-      filtered = filtered.filter(doctor => 
-        doctor.name.toLowerCase().includes(search.toLowerCase())
-      );
+      // Improve the search to handle "Dr." prefix and partial name matches
+      const searchLower = search.toLowerCase();
+      filtered = filtered.filter(doctor => {
+        const doctorName = doctor.name.toLowerCase();
+        // Match even if the user didn't type "Dr." but the doctor name includes it
+        // Also match parts of first or last name
+        return doctorName.includes(searchLower) || 
+               doctorName.replace(/^dr\.\s*/i, '').includes(searchLower);
+      });
     }
     
     if (department) {
@@ -2211,7 +2129,7 @@ export default function App() {
                   <Search className="search-icon" size={20} />
                   <input
                     type="text"
-                    placeholder="Search patients..."
+                    placeholder="..."
                     value={patientSearch}
                     onChange={(e) => setPatientSearch(e.target.value)}
                     className="search-input"
@@ -2286,25 +2204,31 @@ export default function App() {
   useEffect(() => {
     const handleClickOutside = (event) => {
       // Only check for outside clicks when a calendar is expanded
-      if (expandedDoctorId && calendarRef.current && !calendarRef.current.contains(event.target)) {
-        // Check if the click was outside the doctor section header as well
-        const doctorSectionHeaders = document.querySelectorAll('.doctor-section-header');
-        let clickedOnHeader = false;
+      if (expandedDoctorId) {
+        // Get the expanded calendar container
+        const expandedCalendarContainer = calendarRefs.current[expandedDoctorId];
         
-        doctorSectionHeaders.forEach(header => {
-          if (header.contains(event.target)) {
-            clickedOnHeader = true;
+        // Check if the click was outside the expanded calendar
+        if (expandedCalendarContainer && !expandedCalendarContainer.contains(event.target)) {
+          // Check if the click was on a doctor section header
+          const allDoctorHeaders = document.querySelectorAll('.doctor-section-header');
+          let clickedOnAnyHeader = false;
+          
+          allDoctorHeaders.forEach(header => {
+            if (header.contains(event.target)) {
+              clickedOnAnyHeader = true;
+            }
+          });
+          
+          // Only close if not clicked on any doctor header
+          if (!clickedOnAnyHeader) {
+            setExpandedDoctorId(null);
           }
-        });
-        
-        // Only collapse if the click was not on a doctor section header
-        if (!clickedOnHeader) {
-          setExpandedDoctorId(null);
         }
       }
     };
-
-    // Only add the event listener when a calendar is expanded
+    
+    // Add listener only when there is an expanded doctor
     if (expandedDoctorId) {
       document.addEventListener('mousedown', handleClickOutside);
     }
@@ -2394,7 +2318,13 @@ export default function App() {
         break;
       case 'doctor':
         setView('doctors');
-        setTimeout(() => setSearchTerm(result.title), 100);
+        // Set the doctor search after a small delay to ensure the view has changed
+        // Pass an empty string for department to show all departments
+        setTimeout(() => {
+          setSearchTerm(result.title);
+          // Apply the filter directly
+          handleDoctorFilters(result.title, '');
+        }, 100);
         break;
       case 'appointment':
         setView('appointments');
@@ -2634,12 +2564,10 @@ export default function App() {
 
   // Add a new state for doctors by department
   const [doctorsByDepartment, setDoctorsByDepartment] = useState([]);
-  const [loadingDoctorsDepartments, setLoadingDoctorsDepartments] = useState(false);
 
   // Fetch doctors by department stats
   useEffect(() => {
     const fetchDoctorsByDepartment = async () => {
-      setLoadingDoctorsDepartments(true);
       try {
         // Fetch all doctors
         const data = await fetchWithRetry('https://medical-assistant1.onrender.com/doctors');
@@ -2668,8 +2596,6 @@ export default function App() {
       } catch (error) {
         console.error('Error fetching doctors by department:', error);
         setDoctorsByDepartment([]);
-      } finally {
-        setLoadingDoctorsDepartments(false);
       }
     };
 
@@ -2680,9 +2606,9 @@ export default function App() {
 
   // Add a useEffect to scroll to the expanded doctor section
   useEffect(() => {
-    if (expandedDoctorId && calendarRef.current) {
+    if (expandedDoctorId && calendarRefs.current[expandedDoctorId]) {
       // Scroll the expanded section into view with smooth behavior
-      calendarRef.current.scrollIntoView({ 
+      calendarRefs.current[expandedDoctorId].scrollIntoView({ 
         behavior: 'smooth', 
         block: 'nearest'
       });
@@ -2718,6 +2644,36 @@ export default function App() {
                     setShowSearchResults(false);
                     setGlobalSearch('');
                     setSearchResults([]);
+                  } else if (e.key === 'Enter') {
+                    // When Enter is pressed, try to find a doctor matching the search term
+                    const searchTerm = globalSearch.toLowerCase();
+                    
+                    // Check if the search might be for a doctor
+                    const isDoctorSearch = searchTerm.includes('dr') || 
+                      searchTerm.includes('doctor') || 
+                      allDoctors.some(doctor => 
+                        doctor.name.toLowerCase().includes(searchTerm));
+                    
+                    if (isDoctorSearch) {
+                      // Hide search results
+                      setShowSearchResults(false);
+                      
+                      // Navigate to doctors view first
+                      setView('doctors');
+                      
+                      // Apply the search filter directly after a small delay
+                      // to ensure the doctors view is loaded
+                      setTimeout(() => {
+                        setSearchTerm(globalSearch);
+                        // Call handleDoctorFilters directly to apply the filter
+                        handleDoctorFilters(globalSearch, '');
+                      }, 100);
+                      
+                      // Reset the global search
+                      setGlobalSearch('');
+                      
+                      e.preventDefault();
+                    }
                   }
                 }}
               />
