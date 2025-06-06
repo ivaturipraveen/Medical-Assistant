@@ -368,9 +368,7 @@ export default function App() {
       fetchDepartments();
     }
   }, [view, showLogin, departments.length]);
-
   useEffect(() => {
-    if (view === 'doctors') {
       const fetchDoctors = async () => {
         setLoading(prev => ({ ...prev, doctors: true }));
         setErrors(prev => ({ ...prev, doctors: null }));
@@ -383,7 +381,9 @@ export default function App() {
             !doctor.name.toLowerCase().includes('temp')
           );
           setAllDoctors(filteredDoctors);
+        if (view === 'doctors') {
           setFilteredDoctors(filteredDoctors);
+        }
         } catch (error) {
           console.error('Error loading doctors:', error);
           setErrors(prev => ({ ...prev, doctors: error.message }));
@@ -391,13 +391,11 @@ export default function App() {
           setLoading(prev => ({ ...prev, doctors: false }));
         }
       };
-
+    if (!showLogin) {
       fetchDoctors();
     }
-  }, [view]);
-
+  }, [view, showLogin]);
   useEffect(() => {
-    if (view === 'patients') {
       const fetchPatients = async () => {
         setLoadingPatients(true);
         setErrors(prev => ({ ...prev, patients: null }));
@@ -412,7 +410,9 @@ export default function App() {
           
           const patientsData = data.patients || [];
           setPatients(patientsData);
+        if (view === 'patients') {
           setFilteredPatients(patientsData); // Initialize filteredPatients with all patients
+        }
         } catch (error) {
           console.error('Error loading patients:', error);
           setErrors(prev => ({ ...prev, patients: error.message }));
@@ -420,19 +420,15 @@ export default function App() {
           setLoadingPatients(false);
         }
       };
-
+    if (!showLogin) {
       fetchPatients();
     }
-  }, [view]);
-
+  }, [view, showLogin]);
   useEffect(() => {
     if (showLogin) return;
     if (selectedCategory) return;
-
     setLoadingPatients(true);
     setError('');
-    
-    // Fetch patients count
     const fetchPatientsCount = async () => {
       try {
         const data = await fetchWithRetry('https://medical-assistant1.onrender.com/patients/count');
@@ -645,6 +641,7 @@ export default function App() {
     }
   }, [patients, patientSearch, selectedDepartmentFilter]);
 
+  // Fetch appointments data for both the appointments view and global search
   useEffect(() => {
     const fetchAllAppointments = async () => {
       setLoadingAllAppointments(true);
@@ -659,10 +656,11 @@ export default function App() {
       }
     };
 
-    if (view === 'appointments') {
+    // Always fetch appointments data on initial load and when view changes to appointments
+    if (!showLogin) {
       fetchAllAppointments();
     }
-  }, [view]);
+  }, [view, showLogin]);
 
   useEffect(() => {
     // Update useEffect for session check
@@ -2253,31 +2251,31 @@ export default function App() {
   // Handle global search
   const handleGlobalSearch = (searchTerm) => {
     setGlobalSearch(searchTerm);
-    if (!searchTerm.trim()) {
+    if (!searchTerm || !searchTerm.trim()) {
       setSearchResults([]);
       setShowSearchResults(false);
       return;
     }
 
-    const term = searchTerm.toLowerCase();
+    const term = searchTerm.toLowerCase().trim();
     
     // Search in patients
-    const patientResults = patients.filter(patient =>
-      patient.full_name.toLowerCase().includes(term)
-    ).slice(0, 3);
+    const patientResults = patients && patients.length > 0 ? patients.filter(patient =>
+      patient.full_name && patient.full_name.toLowerCase().includes(term)
+    ).slice(0, 3) : [];
 
     // Search in doctors
-    const doctorResults = allDoctors.filter(doctor =>
-      doctor.name.toLowerCase().includes(term)
-    ).slice(0, 3);
+    const doctorResults = allDoctors && allDoctors.length > 0 ? allDoctors.filter(doctor =>
+      doctor.name && doctor.name.toLowerCase().includes(term)
+    ).slice(0, 3) : [];
 
     // Search in appointments
-    const appointmentResults = allAppointments.filter(apt =>
-      apt.patient_name.toLowerCase().includes(term) ||
-      apt.doctor_name.toLowerCase().includes(term)
-    ).slice(0, 3);
+    const appointmentResults = allAppointments && allAppointments.length > 0 ? allAppointments.filter(apt =>
+      (apt.patient_name && apt.patient_name.toLowerCase().includes(term)) ||
+      (apt.doctor_name && apt.doctor_name.toLowerCase().includes(term))
+    ).slice(0, 3) : [];
 
-    setSearchResults([
+    const results = [
       {
         type: 'Patients',
         items: patientResults.map(patient => ({
@@ -2307,9 +2305,11 @@ export default function App() {
           appointmentTime: apt.appointment_time
         }))
       }
-    ]);
+    ];
     
-    setShowSearchResults(true);
+    setSearchResults(results);
+    // Only show search results if there are any matches
+    setShowSearchResults(results.some(group => group.items.length > 0));
   };
 
   const handleSearchResultClick = (result) => {
@@ -3072,6 +3072,16 @@ export default function App() {
                 placeholder="Search patients, doctors, appointments..."
                 value={globalSearch}
                 onChange={(e) => handleGlobalSearch(e.target.value)}
+                onClick={() => {
+                  if (globalSearch.trim() && searchResults.some(group => group.items.length > 0)) {
+                    setShowSearchResults(true);
+                  }
+                }}
+                onFocus={() => {
+                  if (globalSearch.trim() && searchResults.some(group => group.items.length > 0)) {
+                    setShowSearchResults(true);
+                  }
+                }}
                 onKeyDown={(e) => {
                   if (e.key === 'Escape') {
                     setShowSearchResults(false);

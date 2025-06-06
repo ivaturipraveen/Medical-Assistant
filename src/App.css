@@ -115,7 +115,7 @@ html, body, #root, .app-container {
   background: white;
   border-radius: 8px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-  z-index: 1000;
+  z-index: 9999;
   max-height: 400px;
   overflow-y: auto;
   display: none;
@@ -2351,7 +2351,7 @@ html, body, #root, .app-container {
   display: flex;
   justify-content: center;
   align-items: center;
-  z-index: 1000;
+  z-index: 9999;
   animation: overlayFadeIn 0.2s ease-out;
 }
 
@@ -2363,7 +2363,6 @@ html, body, #root, .app-container {
     opacity: 1;
   }
 }
-
 .appointment-popup {
   position: relative;
   background: linear-gradient(to bottom right, #ffffff, #f8fafc);
@@ -2373,7 +2372,7 @@ html, body, #root, .app-container {
   width: 90%;
   max-width: 400px;
   z-index: 1001;
-  border: 1px solid rgba(12, 137, 144, 0.1);
+  border: 1px solid rgba(12, 137, 144, 0.1) !important;
   transform-origin: center;
   animation: popupZoomIn 0.3s ease-out;
 }
