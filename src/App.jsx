@@ -1665,7 +1665,7 @@ export default function App() {
       // Group appointments by doctor and remove 'Dr.' prefix if 
       // it exists
       const appointmentsByDoctor = departmentAppointments.reduce((acc, apt) => {
-        const cleanDoctorName = apt.doctor_name.replace(/^Dr\.\s*/i, '');
+        const cleanDoctorName = apt.doctor_name.replace(/^Dr\.?\s*/i, '');
         if (!acc[cleanDoctorName]) {
           acc[cleanDoctorName] = {};
         }
@@ -2129,7 +2129,7 @@ export default function App() {
                   <Search className="search-icon" size={20} />
                   <input
                     type="text"
-                    placeholder="..."
+                    placeholder="Search patients..."
                     value={patientSearch}
                     onChange={(e) => setPatientSearch(e.target.value)}
                     className="search-input"
@@ -2309,6 +2309,14 @@ export default function App() {
     setSelectedDepartmentFilter('');
     setSelectedDepartmentDoctor('');
 
+    // Variables for appointment handling
+    let appointmentText;
+    let doctorNameMatch;
+    let doctorName;
+    let appointment;
+    let cleanDoctorName;
+    let appointmentDate;
+
     // Navigate to the appropriate section
     switch (result.type) {
       case 'patient':
@@ -2327,7 +2335,139 @@ export default function App() {
         }, 100);
         break;
       case 'appointment':
-        setView('appointments');
+        // Extract the doctor name from the appointment title
+        appointmentText = result.title;
+        doctorNameMatch = appointmentText.match(/with Dr\.?\s*(.+?)$/i);
+        
+        if (doctorNameMatch && doctorNameMatch[1]) {
+          doctorName = doctorNameMatch[1].trim();
+          
+          // Find the appointment by ID or by doctor name
+          appointment = allAppointments.find(apt => apt.id === result.id) || 
+            allAppointments.find(apt => 
+              apt.doctor_name.toLowerCase().includes(doctorName.toLowerCase())
+            );
+          
+          if (appointment) {
+            // Navigate to appointments view
+            setView('appointments');
+            
+            // Find the correct department for this doctor by checking all appointments
+            const doctorAppointments = allAppointments.filter(apt => 
+              apt.doctor_name.toLowerCase().includes(doctorName.toLowerCase())
+            );
+            
+            // Get the department from matching appointments if possible
+            const departmentFromAppointments = doctorAppointments.length > 0 
+              ? doctorAppointments[0].department 
+              : appointment.department;
+            
+            console.log("Found doctor in department:", departmentFromAppointments);
+            
+            // Set the department to filter appointments
+            setTimeout(() => {
+              // Set the selected department
+              setSelectedDepartment(departmentFromAppointments);
+              
+              // After department is set, expand the doctor's calendar
+              setTimeout(() => {
+                // Clean doctor name if needed (remove Dr. prefix if present)
+                cleanDoctorName = doctorName.replace(/^Dr\.?\s*/i, '');
+                
+                // Check if this doctor exists in the current appointmentsByDoctor
+                const departmentAppointments = allAppointments.filter(apt => 
+                  apt.department === departmentFromAppointments
+                );
+                
+                // Find all available doctor names in this department for comparison
+                const doctorNamesInDept = [...new Set(departmentAppointments.map(apt => {
+                  return apt.doctor_name.replace(/^Dr\.?\s*/i, '');
+                }))];
+                
+                // Debug doctor names
+                console.log("Looking for doctor:", cleanDoctorName);
+                console.log("Available doctors in", departmentFromAppointments + ":", doctorNamesInDept);
+                
+                // Try to find the closest match if exact match fails
+                const exactMatch = doctorNamesInDept.find(name => 
+                  name.toLowerCase().includes(cleanDoctorName.toLowerCase()) ||
+                  cleanDoctorName.toLowerCase().includes(name.toLowerCase())
+                );
+                
+                if (exactMatch) {
+                  console.log("Found match:", exactMatch);
+                  setExpandedDoctorId(exactMatch);
+                } else {
+                  // Use the doctor_name directly from the appointment
+                  const appointmentDoctorName = appointment.doctor_name.replace(/^Dr\.?\s*/i, '');
+                  console.log("Using appointment doctor name:", appointmentDoctorName);
+                  setExpandedDoctorId(appointmentDoctorName);
+                }
+                
+                // Get the appointment date to focus on correct month
+                appointmentDate = new Date(appointment.appointment_time);
+                setCurrentMonth(new Date(
+                  appointmentDate.getFullYear(),
+                  appointmentDate.getMonth(),
+                  1
+                ));
+              }, 800); // Increased timeout to ensure department is fully set
+            }, 300); // Increased timeout
+          } else {
+            // If no matching appointment found, search for the doctor directly
+            const doctorAppointments = allAppointments.filter(apt => 
+              apt.doctor_name.toLowerCase().includes(doctorName.toLowerCase())
+            );
+            
+            if (doctorAppointments.length > 0) {
+              // Navigate to appointments view
+              setView('appointments');
+              
+              // Use the first matching appointment's department
+              const departmentFromDoctor = doctorAppointments[0].department;
+              
+              setTimeout(() => {
+                setSelectedDepartment(departmentFromDoctor);
+                
+                setTimeout(() => {
+                  // Clean doctor name
+                  const cleanDoctorName = doctorName.replace(/^Dr\.?\s*/i, '');
+                  
+                  // Find the correct doctor name in department
+                  const departmentAppointments = allAppointments.filter(apt => 
+                    apt.department === departmentFromDoctor
+                  );
+                  
+                  // Get unique doctor names in this department
+                  const doctorNames = [...new Set(departmentAppointments.map(apt => 
+                    apt.doctor_name.replace(/^Dr\.?\s*/i, '')
+                  ))];
+                  
+                  const matchingDoctorName = doctorNames.find(name => 
+                    name.toLowerCase().includes(cleanDoctorName.toLowerCase()) ||
+                    cleanDoctorName.toLowerCase().includes(name.toLowerCase())
+                  );
+                  
+                  if (matchingDoctorName) {
+                    setExpandedDoctorId(matchingDoctorName);
+                  }
+                  
+                  // Set calendar to current month
+                  const appointmentDate = new Date(doctorAppointments[0].appointment_time);
+                  setCurrentMonth(new Date(
+                    appointmentDate.getFullYear(),
+                    appointmentDate.getMonth(),
+                    1
+                  ));
+                }, 800);
+              }, 300);
+            } else {
+              setView('appointments');
+            }
+          }
+        } else {
+          setView('appointments');
+        }
         break;
     }
   };
@@ -2653,6 +2793,37 @@ export default function App() {
                       searchTerm.includes('doctor') || 
                       allDoctors.some(doctor => 
                         doctor.name.toLowerCase().includes(searchTerm));
+                    
+                    // Check if the search might be for an appointment
+                    const isAppointmentSearch = searchTerm.includes('appointment') ||
+                      searchTerm.includes('with dr') ||
+                      searchResults.some(group => 
+                        group.type === 'Appointments' && group.items.length > 0);
+                    
+                    if (isAppointmentSearch) {
+                      // Try to find a matching appointment from search results
+                      const appointmentResults = searchResults.find(group => group.type === 'Appointments');
+                      if (appointmentResults && appointmentResults.items.length > 0) {
+                        // Hide search results
+                        setShowSearchResults(false);
+                        
+                        // Find best matching appointment
+                        const bestMatch = appointmentResults.items.find(item => 
+                          item.title.toLowerCase().includes(searchTerm.toLowerCase())
+                        ) || appointmentResults.items[0];
+                        
+                        console.log("Selected appointment:", bestMatch.title);
+                        
+                        // Use the existing handler to navigate to the appointment
+                        handleSearchResultClick(bestMatch);
+                        
+                        // Reset the global search
+                        setGlobalSearch('');
+                        
+                        e.preventDefault();
+                        return;
+                      }
+                    }
                     
                     if (isDoctorSearch) {
                       // Hide search results

@@ -18,9 +18,9 @@
 .calendar-section {
   background: #fff;
   border-radius: 12px;
-  padding: 5%;
+  padding: 4%;
   height: fit-content;
-  border: 2px solid #0C8990;
+  border: 1px solid #0C8990;
   margin: 0 auto;
   width: 100%;
 }
@@ -176,12 +176,12 @@
 
 .calendar-tile:enabled:hover {
   background-color: #e6f3ff;
-  color: #0078ff;
+  color: #333;
 }
 
 .calendar-tile.has-appointments {
   background-color: #e6ffe6; /* Light green background */
-  color: #27ae60;
+  color: #333;
   position: relative;
   font-weight: 400;
 }
@@ -237,7 +237,7 @@
   transform: translateX(-50%);
   width: 6px;
   height: 6px;
-  background-color: #2ecc71; /* Green for upcoming appointments */
+  background-color: #e6ccaa; /* Green for upcoming appointments */
   border-radius: 50%;
   display: block;
 }
@@ -278,8 +278,8 @@
 }
 
 .schedule-details {
-  background: #fff;
-  border-radius: 8px;
+  background: #dfeff4;
+  border-radius: 30px;
   padding: 5%;
   border: none;
   width: 100%;
@@ -302,8 +302,12 @@
 }
 
 .time-slot {
+  padding: 8px 12px;
+  margin-bottom: 8px;
+  border-radius: 6px;
   display: flex;
-  justify-content: space-between;
+  flex-direction: column;
+  justify-content: center;
   align-items: center;
   padding: 5%;
   background: #ffffff;
@@ -317,13 +321,27 @@
 .time-slot.available {
   border-left: 8px solid #0C8990;
   transform: translateY(0);
+  background-color: linear-gradient(135deg,#ffffff,#0c8990);
 }
 
 .time-slot.booked {
   border-left: 8px solid #c82020;
-  background: #ffffff;
+  /* background: linear-gradient(135deg,#ffffff,#c82020); */
   box-shadow: 0 8px 15px rgba(144, 12, 49, 0.15);
   transform: translateY(-2px);
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.time-slot.booked .time {
+  justify-content: flex-start;
+}
+
+.time-slot.booked .appointment-info {
+  justify-content: center;
 }
 
 .time-slot.booked:hover {
@@ -334,18 +352,19 @@
 .time {
   display: flex;
   align-items: center;
-  gap: 12px;
-  color: #2d3748;
-  font-size: 16px;
-  font-weight: 400;
+  justify-content: center;
+  gap: 6px;
+  font-weight: 500;
+  color: #333;
+  font-size: 0.9rem;
 }
 
 .appointment-info {
   display: flex;
   align-items: center;
-  gap: 16px;
-  padding-left: 16px;
-  /* border-left: 2px solid #d22533; */
+  gap: 10px;
+  justify-content: center;
+  width: 100%;
 }
 
 .patient-avatar {
@@ -362,21 +381,26 @@
 .patient-details {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 2px;
+  align-items: center;
 }
 
 .patient-name {
-  font-size: 16px;
-  color: #1a202c;
   font-weight: 500;
+  color: #1e293b;
+  font-size: 0.8rem;
+  margin-bottom: 2px;
+  text-align: center;
 }
 
 .status-badge {
-  font-size: 16px;
-  padding: 4px 12px;
-  border-radius: 20px;
-  text-transform: capitalize;
-  font-weight: 400;
+  display: inline-block;
+  padding: 3px 8px;
+  border-radius: 12px;
+  font-size: 0.65rem;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
 }
 
 .status-badge.scheduled {

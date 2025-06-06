@@ -20,11 +20,23 @@ const DoctorSchedule = ({ doctor }) => {
   const slotsCacheRef = useRef(slotsCache);
   // Ref to track initial render for month change effect
   const isInitialMonthRender = useRef(true);
+  // Cache for storing month data to prevent unnecessary reloads
+  const [monthCache, setMonthCache] = useState(new Map());
+  const monthCacheRef = useRef(monthCache);
   
-  // Update ref when state changes
+  // Update refs when state changes
   useEffect(() => {
     slotsCacheRef.current = slotsCache;
   }, [slotsCache]);
+  
+  useEffect(() => {
+    monthCacheRef.current = monthCache;
+  }, [monthCache]);
+
+  // Helper to generate month key for cache
+  const getMonthKey = useCallback((date) => {
+    return `${date.getFullYear()}-${date.getMonth()}`;
+  }, []);
 
   const formatDateForAPI = useCallback((date) => {
     const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
@@ -173,6 +185,15 @@ const DoctorSchedule = ({ doctor }) => {
   const fetchMonthAppointments = useCallback(async () => {
     if (!doctor?.id) return;
     
+    const monthKey = getMonthKey(currentMonth);
+    
+    // Check if we already have this month's data cached
+    if (monthCacheRef.current.has(monthKey)) {
+      setDatesWithAppointments(monthCacheRef.current.get(monthKey));
+      setIsLoadingMonth(false);
+      return;
+    }
+    
     try {
       setIsLoadingMonth(true);
       const startDate = new Date(currentMonth.getFullYear(), currentMonth.getMonth(), 1);
@@ -244,13 +265,25 @@ const DoctorSchedule = ({ doctor }) => {
         );
       }
       
+      // Cache the month data
+      setMonthCache(prev => {
+        const newCache = new Map(prev);
+        newCache.set(monthKey, new Set(appointmentDates));
+        // Keep cache size reasonable (store max 3 months)
+        if (newCache.size > 3) {
+          const firstKey = newCache.keys().next().value;
+          newCache.delete(firstKey);
+        }
+        return newCache;
+      });
+      
     } catch (err) {
       console.error('Error fetching month appointments:', err);
       setError(err.message);
     } finally {
       setIsLoadingMonth(false);
     }
-  }, [currentMonth, doctor?.id, formatDateForAPI, getSlots, isDateInPast]);
+  }, [currentMonth, doctor?.id, formatDateForAPI, getSlots, isDateInPast, getMonthKey]);
 
   const handleDateChange = useCallback(async (date) => {
     setSelectedDate(date);
@@ -460,7 +493,8 @@ const DoctorSchedule = ({ doctor }) => {
     );
   };
 
-  if (isLoadingMonth && datesWithAppointments.size === 0) {
+  // Only show loading state on initial load, not when switching months if we have cached data
+  if (isLoadingMonth && datesWithAppointments.size === 0 && monthCache.size === 0) {
     return (
       <div className="loading-state">
         <div className="loading-spinner"></div>
@@ -474,7 +508,7 @@ const DoctorSchedule = ({ doctor }) => {
   }
 
   return (
-    <div className="doctor-schedule">
+    <>
       <div className="schedule-container">
         <div className="calendar-section">
           <Calendar
@@ -540,9 +574,6 @@ const DoctorSchedule = ({ doctor }) => {
             <div className="time-slots">
               {bookedSlots.length > 0 ? (
                 <>
-                  {/* <div className="past-date-message">
-                    <p>This is a past date. Showing historical appointments.</p>
-                  </div> */}
                   {bookedSlots
                     .sort((a, b) => a.time.localeCompare(b.time))
                     .map((slot, index) => {
@@ -631,7 +662,7 @@ const DoctorSchedule = ({ doctor }) => {
       </div>
       
       <DoctorProfileModal />
-    </div>
+    </>
   );
 };
 
