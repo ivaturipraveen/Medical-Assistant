@@ -1202,11 +1202,6 @@ export default function App() {
                     {calculateDetailedTrend(patientStats.total, dashboardStats?.total_patients || null).percentage}
                   </span> */}
                 </div>
-                <div className="stat-actions">
-                  <button className="stat-menu-btn">
-                    <ChevronDown size={18} />
-                  </button>
-                </div>
               </div>
 
               {/* Number of Doctors - NEW CARD */}
@@ -1220,11 +1215,6 @@ export default function App() {
                   {/* <span className="stat-trend positive">
                     +2.5%
                   </span> */}
-                </div>
-                <div className="stat-actions">
-                  <button className="stat-menu-btn">
-                    <ChevronDown size={18} />
-                  </button>
                 </div>
               </div>
 
@@ -1240,11 +1230,6 @@ export default function App() {
                     {calculateDetailedTrend(dashboardStats.total_appointments, Math.floor(dashboardStats.total_appointments * 0.98)).percentage}
                   </span> */}
                 </div>
-                <div className="stat-actions">
-                  <button className="stat-menu-btn">
-                    <ChevronDown size={18} />
-                  </button>
-                </div>
               </div>
 
               {/* Upcoming Appointments */}
@@ -1258,11 +1243,6 @@ export default function App() {
                   {/* <span className={`stat-trend ${calculateDetailedTrend(appointmentsStatus.upcoming, Math.floor(appointmentsStatus.upcoming * 1.01)).isPositive ? 'positive' : 'negative'}`}>
                     {calculateDetailedTrend(appointmentsStatus.upcoming, Math.floor(appointmentsStatus.upcoming * 1.01)).percentage}
                   </span> */}
-                </div>
-                <div className="stat-actions">
-                  <button className="stat-menu-btn">
-                    <ChevronDown size={18} />
-                  </button>
                 </div>
               </div>
             </div>
@@ -1722,6 +1702,10 @@ export default function App() {
             existingPopup.remove();
           }
 
+          // Get patient to highlight (if any)
+          const patientToHighlight = event.currentTarget.getAttribute('data-highlight-patient');
+          console.log("Patient to highlight:", patientToHighlight);
+
           // Create overlay
           const overlay = document.createElement('div');
           overlay.className = 'appointment-popup-overlay';
@@ -1730,18 +1714,27 @@ export default function App() {
           const popup = document.createElement('div');
           popup.className = 'appointment-popup';
 
+          // Sort appointments and highlight the searched patient (if applicable)
+          const sortedAppointments = appointmentsWithStatus
+            .sort((a, b) => a.appointment_time.localeCompare(b.appointment_time))
+            .map(apt => {
+              const isHighlighted = patientToHighlight && apt.patient_name === patientToHighlight;
+              return {
+                ...apt,
+                isHighlighted
+              };
+            });
+
           const popupContent = `
             <button class="popup-close-btn">×</button>
             <div class="appointment-popup-list">
-              ${appointmentsWithStatus
-                .sort((a, b) => a.appointment_time.localeCompare(b.appointment_time))
-                .map(apt => `
-                  <div class="popup-appointment-item">
-                    <span class="popup-appointment-time">${apt.appointment_time}</span>
-                    <span class="popup-appointment-patient">${apt.patient_name}</span>
-                    <span class="popup-appointment-status ${apt.appointmentStatus}">${apt.appointmentStatus}</span>
-                  </div>
-                `).join('')}
+              ${sortedAppointments.map(apt => `
+                <div class="popup-appointment-item ${apt.isHighlighted ? 'highlighted-appointment' : ''}">
+                  <span class="popup-appointment-time">${apt.appointment_time}</span>
+                  <span class="popup-appointment-patient">${apt.patient_name}</span>
+                  <span class="popup-appointment-status ${apt.appointmentStatus}">${apt.appointmentStatus}</span>
+                </div>
+              `).join('')}
             </div>
           `;
 
@@ -1763,10 +1756,29 @@ export default function App() {
             }
           });
 
+          // Add custom styling for highlighted appointment
+          const style = document.createElement('style');
+          style.textContent = `
+            .highlighted-appointment {
+              background: rgba(22, 165, 173, 0.2) !important;
+              border: 2px solid #16a5ad !important;
+              transform: scale(1.02) !important;
+            }
+          `;
+          document.head.appendChild(style);
+
           // Update active state of calendar day
           const allCalendarDays = document.querySelectorAll('.calendar-day');
           allCalendarDays.forEach(day => day.classList.remove('active'));
           event.currentTarget.classList.add('active');
+
+          // Scroll highlighted appointment into view if present
+          setTimeout(() => {
+            const highlightedElement = popup.querySelector('.highlighted-appointment');
+            if (highlightedElement) {
+              highlightedElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
+          }, 100);
         }
       };
 
@@ -2290,7 +2302,9 @@ export default function App() {
           id: apt.id,
           title: `${apt.patient_name} with Dr. ${apt.doctor_name}`,
           subtitle: format(new Date(apt.appointment_time), 'PPp'),
-          type: 'appointment'
+          type: 'appointment',
+          patientName: apt.patient_name,
+          appointmentTime: apt.appointment_time
         }))
       }
     ]);
@@ -2316,6 +2330,7 @@ export default function App() {
     let appointment;
     let cleanDoctorName;
     let appointmentDate;
+    let patientToHighlight = null;
 
     // Navigate to the appropriate section
     switch (result.type) {
@@ -2335,6 +2350,10 @@ export default function App() {
         }, 100);
         break;
       case 'appointment':
+        // Store patient name for highlighting in popup
+        patientToHighlight = result.patientName;
+        console.log("Storing patient name for highlight:", patientToHighlight);
+        
         // Extract the doctor name from the appointment title
         appointmentText = result.title;
         doctorNameMatch = appointmentText.match(/with Dr\.?\s*(.+?)$/i);
@@ -2342,11 +2361,11 @@ export default function App() {
         if (doctorNameMatch && doctorNameMatch[1]) {
           doctorName = doctorNameMatch[1].trim();
           
-          // Find the appointment by ID or by doctor name
-          appointment = allAppointments.find(apt => apt.id === result.id) || 
-            allAppointments.find(apt => 
-              apt.doctor_name.toLowerCase().includes(doctorName.toLowerCase())
-            );
+          // Find the EXACT appointment by patient name and doctor name
+          appointment = allAppointments.find(apt => 
+            apt.patient_name === patientToHighlight && 
+            apt.doctor_name.toLowerCase().includes(doctorName.toLowerCase())
+          ) || allAppointments.find(apt => apt.id === result.id);
           
           if (appointment) {
             // Navigate to appointments view
@@ -2397,21 +2416,295 @@ export default function App() {
                 if (exactMatch) {
                   console.log("Found match:", exactMatch);
                   setExpandedDoctorId(exactMatch);
+                  
+                  // Get the appointment date to focus on correct month
+                  appointmentDate = new Date(appointment.appointment_time);
+                  setCurrentMonth(new Date(
+                    appointmentDate.getFullYear(),
+                    appointmentDate.getMonth(),
+                    1
+                  ));
+                  
+                  // After calendar is rendered, simulate a click on the date with the appointment
+                  setTimeout(() => {
+                    // Get the appointment date and format it
+                    const appointmentDay = appointmentDate.getDate();
+                    const appointmentMonth = appointmentDate.getMonth() + 1; // 1-based month
+                    
+                    console.log(`Looking for day ${appointmentDay} in month ${appointmentMonth}`);
+                    console.log(`Appointment time: ${appointment.appointment_time}`);
+                    
+                    // Try to find and click the calendar day multiple times
+                    let attempts = 0;
+                    const maxAttempts = 10;
+                    
+                    const findAndClickDay = () => {
+                      attempts++;
+                      
+                      // Only proceed if the doctor's calendar is expanded
+                      if (!calendarRefs.current[exactMatch]) {
+                        if (attempts < maxAttempts) {
+                          console.log(`Calendar not yet rendered, trying again... (attempt ${attempts})`);
+                          setTimeout(findAndClickDay, 300);
+                        } else {
+                          console.log("Max attempts reached, couldn't find calendar");
+                        }
+                        return;
+                      }
+                      
+                      // Find the calendar container
+                      const calendarContainer = calendarRefs.current[exactMatch];
+                      
+                      // Get all calendar days
+                      const allCalendarDays = calendarContainer.querySelectorAll('.calendar-day');
+                      let dayFound = false;
+                      
+                      // First try: Look for the exact appointment day
+                      allCalendarDays.forEach(dayElement => {
+                        if (dayFound) return; // Skip if already found
+                        
+                        const dayNumber = dayElement.querySelector('.day-number');
+                        if (!dayNumber) return;
+                        
+                        const dayText = dayNumber.textContent.trim();
+                        const day = parseInt(dayText, 10);
+                        
+                        if (day === appointmentDay) {
+                          // Check if this day is clickable (has appointments)
+                          if (dayElement.classList.contains('clickable')) {
+                            console.log(`Found day ${day}, clicking it`);
+                            // Add custom data attribute to help popup logic find the right patient
+                            dayElement.setAttribute('data-highlight-patient', patientToHighlight);
+                            // Trigger a click on this day
+                            dayElement.click();
+                            dayFound = true;
+                          } else {
+                            console.log(`Found day ${day} but it's not clickable`);
+                          }
+                        }
+                      });
+                      
+                      // Second try: If exact day isn't clickable, find a day that has this patient's appointment
+                      if (!dayFound) {
+                        console.log("Exact day not clickable, looking for any day with this patient's appointment");
+                        
+                        // Get all the doctor's appointments for this patient
+                        const patientAppointments = allAppointments.filter(apt => 
+                          apt.doctor_name.replace(/^Dr\.?\s*/i, '') === exactMatch && 
+                          apt.patient_name === patientToHighlight
+                        );
+                        
+                        if (patientAppointments.length > 0) {
+                          console.log(`Found ${patientAppointments.length} appointments for this patient with this doctor`);
+                          
+                          // Try each appointment date
+                          for (const patApt of patientAppointments) {
+                            if (dayFound) break;
+                            
+                            const patAptDate = new Date(patApt.appointment_time);
+                            const patAptDay = patAptDate.getDate();
+                            
+                            console.log(`Trying alternative date: day ${patAptDay}`);
+                            
+                            // Look for this day in the calendar
+                            allCalendarDays.forEach(dayElement => {
+                              if (dayFound) return;
+                              
+                              const dayNumber = dayElement.querySelector('.day-number');
+                              if (!dayNumber) return;
+                              
+                              const dayText = dayNumber.textContent.trim();
+                              const day = parseInt(dayText, 10);
+                              
+                              if (day === patAptDay && dayElement.classList.contains('clickable')) {
+                                console.log(`Found alternative day ${day}, clicking it`);
+                                dayElement.setAttribute('data-highlight-patient', patientToHighlight);
+                                dayElement.click();
+                                dayFound = true;
+                              }
+                            });
+                          }
+                        }
+                      }
+                      
+                      // Third try: If still not found, click ANY clickable day as fallback
+                      if (!dayFound) {
+                        console.log("No specific day found, looking for any clickable day");
+                        
+                        allCalendarDays.forEach(dayElement => {
+                          if (dayFound) return;
+                          
+                          if (dayElement.classList.contains('clickable')) {
+                            const dayNumber = dayElement.querySelector('.day-number');
+                            if (!dayNumber) return;
+                            
+                            console.log(`Clicking first available clickable day: ${dayNumber.textContent.trim()}`);
+                            dayElement.setAttribute('data-highlight-patient', patientToHighlight);
+                            dayElement.click();
+                            dayFound = true;
+                          }
+                        });
+                      }
+                      
+                      if (!dayFound && attempts < maxAttempts) {
+                        console.log(`Day ${appointmentDay} not found or not clickable, attempt ${attempts}`);
+                        setTimeout(findAndClickDay, 300);
+                      } else if (!dayFound) {
+                        console.log("Max attempts reached, couldn't find calendar date to click");
+                      }
+                    };
+                    
+                    // Start trying to find and click the day
+                    setTimeout(findAndClickDay, 500);
+                  }, 800);
                 } else {
                   // Use the doctor_name directly from the appointment
                   const appointmentDoctorName = appointment.doctor_name.replace(/^Dr\.?\s*/i, '');
                   console.log("Using appointment doctor name:", appointmentDoctorName);
                   setExpandedDoctorId(appointmentDoctorName);
+                  
+                  // Get the appointment date to focus on correct month
+                  appointmentDate = new Date(appointment.appointment_time);
+                  setCurrentMonth(new Date(
+                    appointmentDate.getFullYear(),
+                    appointmentDate.getMonth(),
+                    1
+                  ));
+                  
+                  // After calendar is rendered, simulate a click on the date with the appointment
+                  setTimeout(() => {
+                    // Get the appointment date and format it
+                    const appointmentDay = appointmentDate.getDate();
+                    const appointmentMonth = appointmentDate.getMonth() + 1; // 1-based month
+                    
+                    console.log(`Looking for day ${appointmentDay} in month ${appointmentMonth}`);
+                    console.log(`Appointment time: ${appointment.appointment_time}`);
+                    
+                    // Try to find and click the calendar day multiple times
+                    let attempts = 0;
+                    const maxAttempts = 10;
+                    
+                    const findAndClickDay = () => {
+                      attempts++;
+                      
+                      // Only proceed if the doctor's calendar is expanded
+                      if (!calendarRefs.current[appointmentDoctorName]) {
+                        if (attempts < maxAttempts) {
+                          console.log(`Calendar not yet rendered, trying again... (attempt ${attempts})`);
+                          setTimeout(findAndClickDay, 300);
+                        } else {
+                          console.log("Max attempts reached, couldn't find calendar");
+                        }
+                        return;
+                      }
+                      
+                      // Find the calendar container
+                      const calendarContainer = calendarRefs.current[appointmentDoctorName];
+                      
+                      // Get all calendar days
+                      const allCalendarDays = calendarContainer.querySelectorAll('.calendar-day');
+                      let dayFound = false;
+                      
+                      // First try: Look for the exact appointment day
+                      allCalendarDays.forEach(dayElement => {
+                        if (dayFound) return; // Skip if already found
+                        
+                        const dayNumber = dayElement.querySelector('.day-number');
+                        if (!dayNumber) return;
+                        
+                        const dayText = dayNumber.textContent.trim();
+                        const day = parseInt(dayText, 10);
+                        
+                        if (day === appointmentDay) {
+                          // Check if this day is clickable (has appointments)
+                          if (dayElement.classList.contains('clickable')) {
+                            console.log(`Found day ${day}, clicking it`);
+                            // Add custom data attribute to help popup logic find the right patient
+                            dayElement.setAttribute('data-highlight-patient', patientToHighlight);
+                            // Trigger a click on this day
+                            dayElement.click();
+                            dayFound = true;
+                          } else {
+                            console.log(`Found day ${day} but it's not clickable`);
+                          }
+                        }
+                      });
+                      
+                      // Second try: If exact day isn't clickable, find a day that has this patient's appointment
+                      if (!dayFound) {
+                        console.log("Exact day not clickable, looking for any day with this patient's appointment");
+                        
+                        // Get all the doctor's appointments for this patient
+                        const patientAppointments = allAppointments.filter(apt => 
+                          apt.doctor_name.replace(/^Dr\.?\s*/i, '') === appointmentDoctorName && 
+                          apt.patient_name === patientToHighlight
+                        );
+                        
+                        if (patientAppointments.length > 0) {
+                          console.log(`Found ${patientAppointments.length} appointments for this patient with this doctor`);
+                          
+                          // Try each appointment date
+                          for (const patApt of patientAppointments) {
+                            if (dayFound) break;
+                            
+                            const patAptDate = new Date(patApt.appointment_time);
+                            const patAptDay = patAptDate.getDate();
+                            
+                            console.log(`Trying alternative date: day ${patAptDay}`);
+                            
+                            // Look for this day in the calendar
+                            allCalendarDays.forEach(dayElement => {
+                              if (dayFound) return;
+                              
+                              const dayNumber = dayElement.querySelector('.day-number');
+                              if (!dayNumber) return;
+                              
+                              const dayText = dayNumber.textContent.trim();
+                              const day = parseInt(dayText, 10);
+                              
+                              if (day === patAptDay && dayElement.classList.contains('clickable')) {
+                                console.log(`Found alternative day ${day}, clicking it`);
+                                dayElement.setAttribute('data-highlight-patient', patientToHighlight);
+                                dayElement.click();
+                                dayFound = true;
+                              }
+                            });
+                          }
+                        }
+                      }
+                      
+                      // Third try: If still not found, click ANY clickable day as fallback
+                      if (!dayFound) {
+                        console.log("No specific day found, looking for any clickable day");
+                        
+                        allCalendarDays.forEach(dayElement => {
+                          if (dayFound) return;
+                          
+                          if (dayElement.classList.contains('clickable')) {
+                            const dayNumber = dayElement.querySelector('.day-number');
+                            if (!dayNumber) return;
+                            
+                            console.log(`Clicking first available clickable day: ${dayNumber.textContent.trim()}`);
+                            dayElement.setAttribute('data-highlight-patient', patientToHighlight);
+                            dayElement.click();
+                            dayFound = true;
+                          }
+                        });
+                      }
+                      
+                      if (!dayFound && attempts < maxAttempts) {
+                        console.log(`Day ${appointmentDay} not found or not clickable, attempt ${attempts}`);
+                        setTimeout(findAndClickDay, 300);
+                      } else if (!dayFound) {
+                        console.log("Max attempts reached, couldn't find calendar date to click");
+                      }
+                    };
+                    
+                    // Start trying to find and click the day
+                    setTimeout(findAndClickDay, 500);
+                  }, 800);
                 }
-                
-                // Get the appointment date to focus on correct month
-                appointmentDate = new Date(appointment.appointment_time);
-                setCurrentMonth(new Date(
-                  appointmentDate.getFullYear(),
-                  appointmentDate.getMonth(),
-                  1
-                ));
-              }, 800); // Increased timeout to ensure department is fully set
+              }, 500); // Increased timeout to ensure department is fully set
             }, 300); // Increased timeout
           } else {
             // If no matching appointment found, search for the doctor directly
