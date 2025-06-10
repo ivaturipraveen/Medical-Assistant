@@ -37,6 +37,7 @@ async def validate_users(request: Request):
 
             return JSONResponse({
                 "message": "Patient exists.",
+                "name":row[1],
                 "patient_id": pid,
             }, status_code=200)
         else:
