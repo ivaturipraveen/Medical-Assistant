@@ -11,9 +11,8 @@ async def validate_users(request: Request):
     try:
         data = json.loads(await request.body())
         print(data)
-        dob_str = data.get("dob", "").strip()
-        phone = data.get("phone", "")
-
+        dob_str = data.get("dob", "").strip().replace(" ", "")
+        phone = data.get("phone", "").strip().replace(" ", "")
 
         if not dob_str or dob_str.lower() == 'null':
             return JSONResponse({"error": "Date of birth is required"}, status_code=422)
