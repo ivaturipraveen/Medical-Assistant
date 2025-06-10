@@ -10,9 +10,9 @@ Router=APIRouter()
 async def validate_users(request: Request):
     try:
         data = json.loads(await request.body())
+        print(data)
         dob_str = data.get("dob", "").strip()
         phone = data.get("phone", "")
-        print(dob_str,phone)
 
 
         if not dob_str or dob_str.lower() == 'null':
