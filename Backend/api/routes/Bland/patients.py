@@ -40,7 +40,7 @@ async def validate_users(request: Request):
                 "patient_id": pid,
             }, status_code=200)
         else:
-            return JSONResponse({"message": "Patient does not exist."}, status_code=404)
+            return JSONResponse({"message": "Patient does not exist."}, status_code=201)
 
     except Exception as e:
         return JSONResponse({"error":"Server error","details":str(e)}, status_code=500)
