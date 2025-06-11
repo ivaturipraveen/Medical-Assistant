@@ -8,14 +8,7 @@ import re
 from database import conn,cursor
 
 
-Router=APIRouter()
-@Router.post("/receive-name")
-async def receive_name(request: Request):
-    body = await request.json()
-    name = body.get("name")
-    print(f"Received name: {name}")
-    return JSONResponse(content={"dob":"14-08-2005","message": f"Name {name} received successfully!"}, status_code=200)
-    
+Router=APIRouter() 
 
 @Router.post("/Bland/get-doctors")
 async def get_doctors(request : Request):
@@ -105,11 +98,14 @@ async def get_time_slot(request: Request):
             time_obj = datetime.strptime(str(slot[0]), "%H:%M:%S")
             formatted_time = time_obj.strftime("%I:%M %p")
             formatted_slots.append(formatted_time)
+        
+        response_text = ", ".join(formatted_slots)
 
         return JSONResponse({
             "doctor_name": matched_name,
             "date": parsed_date.strftime("%Y-%m-%d"),
             "available_slots": formatted_slots,
+            "available_string": response_text,
             "availability": "Available"
         }, status_code=200)
 
@@ -172,11 +168,13 @@ async def check_avail(request: Request):
             formatted_time = time_obj.strftime("%I:%M %p")
             formatted_slots.append(formatted_time)
 
+        response_text = ", ".join(formatted_slots)
         return JSONResponse({
             "doctor_name": matched_name,
             "requested_date": parsed_date.strftime("%Y-%m-%d"),
             "available": True,
-            "available_slots": formatted_slots
+            "available_slots": formatted_slots,
+            "slots_string":response_text
         }, status_code=200)
 
     # If not available on requested date, find other available dates
@@ -300,10 +298,12 @@ async def get_available_booking_dates(request: Request):
                 available_dates.append(current_date.strftime("%Y-%m-%d"))
 
         print(f"Final available dates: {available_dates}")
+        response_text = ", ".join(available_dates)
 
         return JSONResponse({
             "doctor_name": matched_name,
             "available_dates": available_dates,
+            "dates_string": response_text
         }, status_code=200)
 
     except Exception as e:
