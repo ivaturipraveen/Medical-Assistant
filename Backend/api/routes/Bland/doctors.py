@@ -28,7 +28,7 @@ async def get_doctors(request : Request):
         rows = cursor.fetchall()
 
         if not rows:
-            return {"response": f"{departments}"}
+            return {"response": f"this is here{departments}"}
 
         doctor_names = [row[0] for row in rows]
         print(doctor_names)
