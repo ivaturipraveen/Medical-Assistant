@@ -33,7 +33,9 @@ async def get_doctors(request : Request):
         doctor_names = [row[0] for row in rows]
         print(doctor_names)
         response_text = ", ".join(doctor_names)
-        return {"response": response_text}
+        return JSONResponse({
+                "doctor_name": response_text,
+            }, status_code=200)
 
     except Exception as e:
         return {"error": str(e)}
@@ -91,6 +93,8 @@ async def get_time_slot(request: Request):
                 "available_slots": [],
                 "availability": "Not Available"
             }, status_code=200)
+
+
 
         # Format time slots to 12-hour format
         formatted_slots = []
