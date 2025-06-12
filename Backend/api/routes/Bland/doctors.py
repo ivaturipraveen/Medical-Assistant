@@ -44,6 +44,7 @@ async def get_doctors(request : Request):
 async def get_time_slot(request: Request):
     try:
         data = await request.json()
+        print(data)
         raw_input = data.get("d_name", "").strip()
         selected_date = data.get("S_date", "").strip()
 
