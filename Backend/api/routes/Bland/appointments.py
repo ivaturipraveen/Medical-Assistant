@@ -14,6 +14,7 @@ Router=APIRouter()
 async def book_appointment(request: Request):
     try:
         body       = await request.json()
+        print(body)
         raw_dname  = body["dname"]
         raw_date   = body.get("date")      # e.g. "2025-05-31"
         raw_slot   = body["sslot"]         # e.g. "4pm" or "4:00 PM"
