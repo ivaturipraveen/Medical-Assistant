@@ -1,10 +1,18 @@
 import { useState } from 'react';
 import { FaCheckCircle, FaCalendarAlt } from 'react-icons/fa';
+import { useNavigate } from 'react-router-dom';
 
 const LoginForm = () => {
   const [activeTab, setActiveTab] = useState<'admin' | 'doctor'>('admin');
+   const navigate = useNavigate();
+   
+  const handleLogin = (e: React.FormEvent) => {
+    e.preventDefault(); // Prevent form reload
+    navigate('/dashboard'); // ✅ Redirect on login
+  };
 
   return (
+    
     <div className="w-full max-w-sm sm:max-w-md md:max-w-lg lg:max-w-xl px-4 mb-12">
       <h1 className="text-[#007C91] font-bold flex items-center gap-2 justify-center mb-6 text-lg sm:text-xl md:text-2xl">
         <FaCalendarAlt className="text-2xl" />
@@ -34,7 +42,7 @@ const LoginForm = () => {
         </button>
       </div>
 
-      <form className="space-y-4">
+      <form className="space-y-4" onSubmit={handleLogin}>
         <input
           type="email"
           className="w-full border border-gray-300 rounded-md px-4 py-3 text-sm"
@@ -60,7 +68,7 @@ const LoginForm = () => {
           className="w-full bg-[#00a9a3] hover:bg-[#008a88] text-white py-3 rounded-md font-semibold transition flex items-center justify-center"
         >
           Log In <span className="ml-2">→</span>
-        </button>
+      </button>
       </form>
     </div>
   );

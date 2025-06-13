@@ -1,17 +1,22 @@
 import './App.css';
-
-import Login from './components/loginrightsidebar';
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import Dashboard from './pages/Dashboard';
+import MedicalLoginDashboard from './components/loginrightsidebar';
 import ChatWidgetLauncher from './components/Button';
 
 function App() {
   return (
-    <div className="min-h-screen bg-gray-100 relative">
-      {/* Login sidebar or main UI */}
-      <Login />
+    <Router>
+      <div className="min-h-screen bg-gray-100 relative">
+        <Routes>
+          <Route path="/" element={<MedicalLoginDashboard />} />
+          <Route path="/dashboard" element={<Dashboard />} />
+        </Routes>
 
-      {/* Floating Chatbot launcher */}
-      <ChatWidgetLauncher />
-    </div>
+        {/* Floating Chatbot launcher on all pages */}
+        <ChatWidgetLauncher />
+      </div>
+    </Router>
   );
 }
 
