@@ -1,1 +1,62 @@
 @import "tailwindcss";
+@font-face {
+    font-family: 'SF Pro Display';
+    src: url('/fonts.woff2') format('woff2');
+    font-weight: 500;
+    font-style: normal;
+  }
+  
+  @layer utilities {
+    .custom-patient-name {
+        width: 111px;
+        height: 21px;
+      @apply font-[500] text-[14px] leading-[21px];
+      background: linear-gradient(0deg, #555B6C, #555B6C),
+                  linear-gradient(0deg, rgba(0, 0, 0, 0.2), rgba(0, 0, 0, 0.2));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      font-family: 'SF Pro Display', sans-serif;
+    }
+    .custom-dob {
+        display: inline-block;
+        width: 108px;
+        height: 21px;
+        font-family: 'SF Pro Display', sans-serif;
+        font-weight: 500;
+        font-size: 14px;
+        line-height: 21px;
+        letter-spacing: 0;
+        color: #555B6C ;
+  }
+  .custom-number{
+    width:114px;
+    height:21px;
+    font-family: 'SF Pro Display', sans-serif;
+        font-weight: 500;
+        font-size: 14px;
+        line-height: 21px;
+        letter-spacing: 0;
+        color: #555B6C ;
+  }
+
+}
+  @font-face {
+    font-family: 'Geist';
+    src: url('/fonts/Geist-SemiBold.woff2') format('woff2'); /* Replace path as needed */
+    font-weight: 600;
+    font-style: normal;
+  }
+  
+  @layer utilities {
+    .custom-header {
+      width: 115px;
+      height: 28px;
+      font-family: 'Geist', sans-serif;
+      font-weight: 600;
+      font-size: 18px;
+      line-height: 28px;
+      letter-spacing: 0px;
+      color:#0D1A12;
+    }
+  }
+  

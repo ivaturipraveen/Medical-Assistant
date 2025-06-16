@@ -1,4 +1,3 @@
-import React from 'react';
 import profileImg from '../assets/profile.svg';
 import notifyIcon from '../assets/notify.svg';
 import headlineIcon from '../assets/Headline.svg';
@@ -7,7 +6,6 @@ import {
   CalendarDays,
   User,
   Users,
-  Bell,
   ChevronDown,
   Search,
 } from 'lucide-react';
