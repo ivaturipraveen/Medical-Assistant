@@ -216,16 +216,6 @@ cursor.execute("""
 upcoming_appointments = cursor.fetchone()[0]
 
 # Include in return
-return {
-    'stats': {
-        'total_patients': total_patients,
-        'total_doctors': total_doctors,
-        'total_appointments': total_appointments,
-        'todays_appointments': todays_appointments,
-        'upcoming_appointments': upcoming_appointments
-    }
-}
-
         recent_appointments = [
             {
                 'id': row[0],
@@ -242,7 +232,8 @@ return {
                 'total_doctors': total_doctors-1,
                 'total_appointments': total_appointments,
                 'todays_appointments': todays_appointments,
-                'recent_appointments': recent_appointments
+                'recent_appointments': recent_appointments,
+                 'upcoming_appointments': upcoming_appointments
             }
         }
     except Exception as e:
