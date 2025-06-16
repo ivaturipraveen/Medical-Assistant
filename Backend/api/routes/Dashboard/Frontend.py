@@ -234,7 +234,7 @@ async def get_dashboard_stats():
                 'total_appointments': total_appointments,
                 'todays_appointments': todays_appointments,
                 'recent_appointments': recent_appointments,
-                 'upcoming_appointments': upcoming_appointments
+                'upcoming_appointments': upcoming_appointments
             }
         }
     except Exception as e:
