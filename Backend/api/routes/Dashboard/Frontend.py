@@ -362,20 +362,20 @@ async def get_age_distribution():
         cursor.execute("""
             SELECT 
                 CASE 
-                    WHEN age < 18 THEN '0-17'
-                    WHEN age BETWEEN 18 AND 30 THEN '18-30'
-                    WHEN age BETWEEN 31 AND 50 THEN '31-50'
-                    WHEN age BETWEEN 51 AND 70 THEN '51-70'
-                    ELSE '70+'
-                END as age_group,
+                    WHEN age <= 10 THEN 'Child'
+                    WHEN age BETWEEN 11 AND 20 THEN 'Teenager'
+                    WHEN age BETWEEN 21 AND 40 THEN 'Adult'
+                    WHEN age BETWEEN 41 AND 60 THEN 'Middle Aged'
+                    ELSE 'Senior Citizen'
+                END as age_category,
                 COUNT(*) as patient_count
             FROM (
                 SELECT 
                     EXTRACT(YEAR FROM AGE(CURRENT_DATE, dob)) as age
                 FROM patients
             ) age_calc
-            GROUP BY age_group
-            ORDER BY age_group;
+            GROUP BY age_category
+            ORDER BY age_category;
         """)
         
         results = cursor.fetchall()
@@ -394,7 +394,6 @@ async def get_age_distribution():
             content={"error": str(e)},
             status_code=500
         )
-
 
 @Router.get("/slots")
 async def get_doctor_slots(doctor_id: int, date: str):
