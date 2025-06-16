@@ -1,6 +1,6 @@
 @import "tailwindcss";
 
-@font-face {
+/* @font-face {
   font-family: 'SF Pro Display';
   src: url('/fonts.woff2') format('woff2');
   font-weight: 500;
@@ -58,4 +58,4 @@
   .scrollbar-hide::-webkit-scrollbar {
     display: none;
   }
-}
+} */
