@@ -208,11 +208,11 @@ def create_calendar_event(doctor_calendar_id, patient_name, appointment_datetime
         'summary': f'Appointment with {patient_name}',
         'start': {
             'dateTime': appointment_datetime.isoformat(),
-            'timeZone': 'UTC',
+            'timeZone': 'EST',
         },
         'end': {
             'dateTime': (appointment_datetime + timedelta(minutes=duration_minutes)).isoformat(),
-            'timeZone': 'UTC',
+            'timeZone': 'EST',
         },
         'reminders': {
             'useDefault': False,
@@ -232,9 +232,9 @@ def create_calendar_event(doctor_calendar_id, patient_name, appointment_datetime
     
 def update_calendar_event(event_id, calendar_id, title, new_datetime, duration_minutes=30):
     event = calendar_service.events().get(calendarId=calendar_id, eventId=event_id).execute()
-    event['start'] = {'dateTime': new_datetime.isoformat(), 'timeZone': 'UTC'}
+    event['start'] = {'dateTime': new_datetime.isoformat(), 'timeZone': 'EST'}
     end_dt = new_datetime + timedelta(minutes=duration_minutes)
-    event['end']   = {'dateTime': end_dt.isoformat(),   'timeZone': 'UTC'}
+    event['end']   = {'dateTime': end_dt.isoformat(),   'timeZone': 'EST'}
     updated = calendar_service.events().patch(
         calendarId=calendar_id,
         eventId=event_id,
