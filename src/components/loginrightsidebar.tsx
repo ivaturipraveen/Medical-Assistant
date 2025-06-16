@@ -51,6 +51,7 @@ const LoginForm = () => {
 
   return (
     <div className="px-4 sm:px-6 lg:px-10 py-6 w-full max-w-md mx-auto">
+    <div className="px-4 sm:px-6 lg:px-10 py-6 w-full max-w-md mx-auto">
       <h1 className="text-[#007C91] font-bold flex items-center gap-2 justify-center mb-6 text-lg sm:text-xl md:text-2xl">
         <FaCalendarAlt className="text-2xl" />
         Medical Dashboard
@@ -140,6 +141,7 @@ const LeftPanel = () => {
         <img
           src="frame-28993.svg"
           alt="Dashboard Illustration"
+          className="w-full max-w-md sm:max-w-lg md:max-w-xl lg:max-w-2xl h-auto object-contain"
           className="w-full max-w-md sm:max-w-lg md:max-w-xl lg:max-w-2xl h-auto object-contain"
         />
       </div>
