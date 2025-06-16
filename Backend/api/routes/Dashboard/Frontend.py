@@ -221,7 +221,7 @@ async def get_dashboard_stats():
         return {
             'stats': {
                 'total_patients': total_patients,
-                'total_doctors': total_doctors,
+                'total_doctors': total_doctors-1,
                 'total_appointments': total_appointments,
                 'todays_appointments': todays_appointments,
                 'recent_appointments': recent_appointments
