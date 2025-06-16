@@ -59,4 +59,11 @@
       color:#0D1A12;
     }
   }
+  .scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
   

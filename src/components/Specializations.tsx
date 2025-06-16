@@ -1,40 +1,59 @@
+import React, { useEffect, useState } from 'react';
+import { FaBone } from 'react-icons/fa';
+import { GiBrain } from 'react-icons/gi';
+import { MdScience } from 'react-icons/md';
+import { AiOutlineUser } from 'react-icons/ai';
+import { GoHeart } from 'react-icons/go';
+import { RiPulseLine } from 'react-icons/ri';
+import axios from 'axios';
 
-// Import SVGs
-import EndoIcon from '../assets/endo.svg';
-import OrthoIcon from '../assets/ortho.svg';
-import CardioIcon from '../assets/cardio.svg';
+type DepartmentStats = Record<string, number>;
 
-const specializations = [
-  {
-    icon: EndoIcon,
-    title: 'Endocrinology',
-    count: '207 Doctors',
-  },
-  {
-    icon: OrthoIcon,
-    title: 'Orthopedic',
-    count: '586 Doctors',
-  },
-  {
-    icon: CardioIcon,
-    title: 'Cardiologist',
-    count: '652 Doctors',
-  },
-  {
-    icon: EndoIcon,
-    title: 'Endocrinology',
-    count: '207 Doctors',
-  },
-  {
-    icon: OrthoIcon,
-    title: 'Orthopedic',
-    count: '586 Doctors',
-  },
-];
+const getIconByDepartment = (department: string) => {
+  switch (department.toLowerCase()) {
+    case 'cardiology':
+    case 'cardiologist':
+      return <GoHeart className="text-2xl text-emerald-800" />;
+    case 'general physician':
+      return <RiPulseLine className="text-2xl text-emerald-800" />;
+    case 'neurology':
+      return <GiBrain className="text-2xl text-emerald-800" />;
+    case 'orthopedic':
+      return <FaBone className="text-2xl text-emerald-800" />;
+    case 'endocrinology':
+      return <MdScience className="text-2xl text-emerald-800" />;
+    default:
+      return <AiOutlineUser className="text-2xl text-emerald-800" />;
+  }
+};
 
 const Specializations = () => {
+  const [doctorStats, setDoctorStats] = useState<DepartmentStats>({});
+
+  useEffect(() => {
+    axios
+      .get<{ doctors: { department: string }[] }>(
+        'https://medical-assistant1.onrender.com/doctors'
+      )
+      .then((res) => {
+        const stats: DepartmentStats = {};
+        res.data.doctors.forEach((doc) => {
+          const dept = doc.department?.trim();
+          if (dept && dept.toLowerCase() !== 'temp') {
+            stats[dept] = (stats[dept] || 0) + 1;
+          }
+        });
+        setDoctorStats(stats);
+      })
+      .catch((err: unknown) =>
+        console.error('Failed to fetch doctors:', err)
+      );
+  }, []);
+
+  const departments = Object.entries(doctorStats);
+
   return (
-    <div className="w-[930px] h-[209px] p-6 rounded-[10px] bg-white flex flex-col justify-between shadow-sm">
+    <div className="w-full max-w-[930px] p-6 rounded-[10px] bg-white flex flex-col justify-between shadow-sm relative top-[20px] left-[10px]">
       {/* Header */}
       <div className="flex justify-between items-start w-full">
         <h2 className="h-[40px] text-lg font-semibold text-gray-900">
@@ -46,17 +65,17 @@ const Specializations = () => {
       </div>
 
       {/* Specialization Cards */}
-      <div className="flex gap-4 mt-4 overflow-x-auto">
-        {specializations.map((item, index) => (
+      <div className="flex flex-wrap gap-[20px] mt-4">
+        {departments.map(([title, count], index) => (
           <div
             key={index}
-            className="flex flex-col justify-between w-[158px] h-[104px] border border-gray-200 rounded-lg p-4 bg-white hover:shadow-md transition"
+            className="inline-flex flex-col items-center justify-center text-center gap-1 px-4 py-3 border border-gray-200 rounded-lg bg-white hover:shadow-md transition"
           >
-            <img src={item.icon} alt={item.title} className="w-6 h-6 mb-1" />
-            <div className="font-semibold text-gray-900 text-sm">
-              {item.title}
+            <div>{getIconByDepartment(title)}</div>
+            <div className="font-semibold text-gray-900 text-sm capitalize max-w-[160px] truncate">
+              {title}
             </div>
-            <div className="text-xs text-gray-600">{item.count}</div>
+            <div className="text-xs text-gray-600">{count} Doctors</div>
           </div>
         ))}
       </div>

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Users, UserPlus, CalendarDays, CalendarCheck2 } from 'lucide-react';
 
 interface StatCardProps {
@@ -28,6 +28,29 @@ const StatCard = ({ title, value, icon, trend, trendColor }: StatCardProps) => {
 };
 
 const StatCards = () => {
+  const [stats, setStats] = useState({
+    total_patients: 0,
+    total_doctors: 0,
+    total_appointments: 0,
+    todays_appointments: 0
+  });
+
+  useEffect(() => {
+    const fetchStats = async () => {
+      try {
+        const response = await fetch('https://medical-assistant1.onrender.com/dashboard/stats');
+        const data = await response.json();
+        if (data.stats) {
+          setStats(data.stats);
+        }
+      } catch (error) {
+        console.error('Failed to fetch dashboard stats:', error);
+      }
+    };
+
+    fetchStats();
+  }, []);
+
   return (
     <div
       className="flex gap-6"
@@ -35,31 +58,31 @@ const StatCards = () => {
     >
       <StatCard
         title="Total Patients"
-        value="1,24,587"
+        value={stats.total_patients.toLocaleString()}
         icon={<Users className="w-5 h-5" />}
         trend="▲ 40% vs last month"
         trendColor="text-green-500"
       />
       <StatCard
         title="Total Doctors"
-        value="876"
+        value={stats.total_doctors.toLocaleString()}
         icon={<UserPlus className="w-5 h-5" />}
-        trend="▲ 40% vs last month"
+        trend="▲ 22% vs last month"
         trendColor="text-green-500"
       />
       <StatCard
         title="Total Appointments"
-        value="60,543"
+        value={stats.total_appointments.toLocaleString()}
         icon={<CalendarDays className="w-5 h-5" />}
         trend="▼ 13% vs last month"
         trendColor="text-red-500"
       />
       <StatCard
         title="Upcoming Appointments"
-        value="4,587"
+        value={stats.todays_appointments.toLocaleString()}
         icon={<CalendarCheck2 className="w-5 h-5" />}
-        trend="▼ 8% vs last month"
-        trendColor="text-red-500"
+        trend="▲ 5% today"
+        trendColor="text-green-500"
       />
     </div>
   );

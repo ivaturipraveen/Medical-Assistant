@@ -128,8 +128,9 @@ const LoginForm = () => {
         </button>
       </form>
     </div>
-  );
-};
+    </div>
+  )
+}
 
 const LeftPanel = () => {
   return (
@@ -141,9 +142,7 @@ const LeftPanel = () => {
         <img
           src="frame-28993.svg"
           alt="Dashboard Illustration"
-          className="w-full max-w-md sm:max-w-lg md:max-w-xl lg:max-w-2xl h-auto object-contain"
-          className="w-full max-w-md sm:max-w-lg md:max-w-xl lg:max-w-2xl h-auto object-contain"
-        />
+          className="w-full max-w-md sm:max-w-lg md:max-w-xl lg:max-w-2xl h-auto object-contain"/>
       </div>
 
       <div className="grid  grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6 text-sm sm:text-base mt-6 w-full max-w-lg self-start lg:self-start">
