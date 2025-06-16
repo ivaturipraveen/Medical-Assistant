@@ -194,6 +194,13 @@ async def get_dashboard_stats():
         """)
         todays_appointments = cursor.fetchone()[0]
 
+         cursor.execute("""
+            SELECT COUNT(*) FROM appointments 
+            WHERE appointment_time >= CURRENT_TIMESTAMP AND status = 'scheduled'
+        """)
+        upcoming_appointments = cursor.fetchone()[0]
+
+
         # Get recent appointments
         cursor.execute("""
             SELECT 
@@ -208,13 +215,7 @@ async def get_dashboard_stats():
             ORDER BY a.appointment_time ASC
             LIMIT 5
         """)
-        # New line to calculate upcoming appointments (from now onwards)
-cursor.execute("""
-    SELECT COUNT(*) FROM appointments 
-    WHERE appointment_time >= CURRENT_TIMESTAMP AND status = 'scheduled'
-""")
-upcoming_appointments = cursor.fetchone()[0]
-
+        
 # Include in return
         recent_appointments = [
             {
