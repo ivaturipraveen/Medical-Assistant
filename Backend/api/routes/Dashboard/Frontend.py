@@ -193,8 +193,8 @@ async def get_dashboard_stats():
             WHERE DATE(appointment_time) = CURRENT_DATE
         """)
         todays_appointments = cursor.fetchone()[0]
-
-         cursor.execute("""
+        #Get upcoming appointments code
+        cursor.execute("""
             SELECT COUNT(*) FROM appointments 
             WHERE appointment_time >= CURRENT_TIMESTAMP AND status = 'scheduled'
         """)
