@@ -32,7 +32,8 @@ const StatCards = () => {
     total_patients: 0,
     total_doctors: 0,
     total_appointments: 0,
-    todays_appointments: 0
+    todays_appointments: 0,
+    upcoming_appointments: 0, // added field
   });
 
   useEffect(() => {
@@ -79,7 +80,7 @@ const StatCards = () => {
       />
       <StatCard
         title="Upcoming Appointments"
-        value={stats.todays_appointments.toLocaleString()}
+        value={stats.upcoming_appointments.toLocaleString()} // ✅ updated here
         icon={<CalendarCheck2 className="w-5 h-5" />}
         trend="▲ 5% today"
         trendColor="text-green-500"

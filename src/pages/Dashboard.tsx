@@ -17,8 +17,9 @@ export default function Dashboard() {
 
         {/* Specializations + Appointments */}
         <div className="flex gap-[15px] items-start">
-          <div className="w-[930px]">
-            <Specializations />
+          <div className="w-[930px] h-[209px]">
+            <div className="relative top-[-19px] left-[-10px]">
+            <Specializations /></div>
 
             {/* ↓ Below Specializations with 20px gap */}
             <div className="mt-5 flex gap-[15px]">

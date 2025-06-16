@@ -1,77 +1,99 @@
+import { useEffect, useState } from 'react';
 import { FaRegHeart } from 'react-icons/fa';
-
-type StatusType = 'Pending' | 'Approved' | 'Rejected';
+import axios from 'axios';
 
 interface Patient {
-  name: string;
+  id: number;
+  full_name: string;
   dob: string;
-  contact: string;
-  dept: string;
-  status: StatusType;
+  phone_number: string;
+  department: string;
 }
 
-const patients: Patient[] = [
-  { name: 'Adhitya Sarkar', dob: '2005-08-14', contact: '+91 9900000000', dept: 'Cardiology', status: 'Pending' },
-  { name: 'Adhitya Sarkar', dob: '2005-08-14', contact: '+91 9900000000', dept: 'Cardiology', status: 'Pending' },
-  { name: 'Adhitya Sarkar', dob: '2005-08-14', contact: '+91 9900000000', dept: 'Cardiology', status: 'Approved' },
-  { name: 'Adhitya Sarkar', dob: '2005-08-14', contact: '+91 9900000000', dept: 'Cardiology', status: 'Rejected' },
-  { name: 'Adhitya Sarkar', dob: '2005-08-14', contact: '+91 9900000000', dept: 'Cardiology', status: 'Pending' },
-];
+interface Appointment {
+  appointment_id: number;
+  patient_id: number;
+}
 
-const statusStyles: Record<StatusType, string> = {
-  Pending: 'text-orange-500 border-orange-500',
-  Approved: 'text-green-600 border-green-500',
-  Rejected: 'text-red-600 border-red-500',
+const statusStyles = {
+  Scheduled: 'text-green-600 border-green-500',
+  'Not Scheduled': 'text-orange-500 border-orange-500',
 };
 
 export default function NewPatientsTable() {
-  return (
-    <div className="mt-5 w-[692px] h-[404px] bg-white rounded-xl shadow-md overflow-hidden">
-      <div className="p-6 h-full overflow-y-auto">
-        <div className="flex items-center gap-2 mb-4 text-[#0D1A12]">
-          <img
-            src="/Vector - 0.svg"
-            alt="Add User"
-            className="w-[20px] h-[20px] object-contain"
-          />
-          <h2 className="custom-header">New Patients</h2>
-        </div>
+  const [patients, setPatients] = useState<Patient[]>([]);
+  const [appointments, setAppointments] = useState<Appointment[]>([]);
 
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm text-left min-w-[600px]">
-            <thead className="bg-gray-100 text-gray-700 font-medium">
-              <tr>
-                <th className="px-4 py-2">Patient</th>
-                <th className="px-4 py-2">DOB</th>
-                <th className="px-4 py-2">Contact</th>
-                <th className="px-4 py-2">Department</th>
-                <th className="px-4 py-2">Status</th>
-              </tr>
-            </thead>
-            <tbody>
-              {patients.map((patient, index) => (
-                <tr key={index} className="border-b border-gray-200">
-                  <td className="custom-patient-name">{patient.name}</td>
-                  <td className="px-4 py-3 whitespace-nowrap">
-                    <span className="custom-dob">{patient.dob}</span>
-                  </td>
-                  <td className="px-4 py-3 whitespace-nowrap">
-                    <span className="custom-number">{patient.contact}</span>
-                  </td>
-                  <td className="px-4 py-3 text-teal-600 flex items-center gap-1 whitespace-nowrap">
-                    <FaRegHeart className="text-teal-600" /> {patient.dept}
-                  </td>
-                  <td className="px-4 py-3 whitespace-nowrap">
-                    <span
-                      className={`border rounded-full px-3 py-1 text-xs font-medium ${statusStyles[patient.status]}`}
-                    >
-                      {patient.status}
-                    </span>
-                  </td>
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const [patientRes, appointmentRes] = await Promise.all([
+          axios.get<{ patients: Patient[] }>("https://medical-assistant1.onrender.com/patients"),
+          axios.get<{ appointments: Appointment[] }>("https://medical-assistant1.onrender.com/appointments"),
+        ]);
+
+        const recentPatients = patientRes.data.patients.slice(0, 5);
+        setPatients(recentPatients);
+        setAppointments(appointmentRes.data.appointments);
+      } catch (err) {
+        console.error("Failed to fetch data:", err);
+      }
+    };
+
+    fetchData();
+  }, []);
+
+  const getStatus = (patientId: number): 'Scheduled' | 'Not Scheduled' => {
+    return appointments.some(appt => appt.patient_id === patientId) ? 'Scheduled' : 'Not Scheduled';
+  };
+
+  return (
+    <div className="w-full flex justify-center px-4 sm:px-6 lg:px-8 xl:px-12 mt-10">
+      <div className="w-full max-w-6xl bg-white rounded-xl shadow-md overflow-hidden">
+        <div className="p-4 sm:p-6 h-auto max-h-[90vh] overflow-y-auto">
+          <div className="flex items-center gap-2 mb-4 text-[#0D1A12]">
+            <img src="/Vector - 0.svg" alt="Add User" className="w-5 h-5 object-contain" />
+            <h2 className="text-lg font-semibold">New Patients</h2>
+          </div>
+
+          <div className="overflow-x-auto">
+            <table className="min-w-[640px] w-full text-sm text-left">
+              <thead className="bg-gray-100 text-gray-700 font-medium">
+                <tr>
+                  <th className="px-3 py-2 whitespace-nowrap">Patient</th>
+                  <th className="px-3 py-2 whitespace-nowrap">DOB</th>
+                  <th className="px-3 py-2 whitespace-nowrap">Contact</th>
+                  <th className="px-3 py-2 whitespace-nowrap">Department</th>
+                  <th className="px-3 py-2 whitespace-nowrap">Status</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {patients.map((patient) => {
+                  const status = getStatus(patient.id);
+                  return (
+                    <tr key={patient.id} className="border-b border-gray-200">
+                      <td className="px-3 py-3 whitespace-nowrap font-medium text-gray-900">
+                        {patient.full_name}
+                      </td>
+                      <td className="px-3 py-3 whitespace-nowrap">{patient.dob}</td>
+                      <td className="px-3 py-3 whitespace-nowrap">
+                        {patient.phone_number?.trim() || "Not Provided"}
+                      </td>
+                      <td className="px-3 py-3 text-teal-600 flex items-center gap-1 whitespace-nowrap">
+                        <FaRegHeart className="text-teal-600" /> {patient.department}
+                      </td>
+                      <td className="px-3 py-3 whitespace-nowrap">
+                        <span className={`border rounded-full px-3 py-1 text-xs font-medium ${statusStyles[status]}`}>
+                          {status}
+                        </span>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+
         </div>
       </div>
     </div>
