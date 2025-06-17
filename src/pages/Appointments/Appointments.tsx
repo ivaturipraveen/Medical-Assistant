@@ -82,18 +82,18 @@ const AppointmentsPage: React.FC = () => {
   const totalAppointments = Object.values(appointmentsPerDept).reduce((sum, count) => sum + count, 0);
 
   return (
-    <div className="min-h-screen max-w-[1400px] mt-15 font-sf">
+    <div className="min-h-screen w-full mt-15 font-sf">
       {/* Top spacing for Topbar */}
 
       {/* Page Content */}
-      <div className="max-w-7xl mx-auto px-4 md:px-8 py-6">
+      <div className="w-[1400px] mx-auto px-4 md:px-8 py-6">
         <div className="bg-white rounded-2xl h-screen  p-6">
           <div className="text-[18px] font-geist font-semibold mb-6 flex items-center gap-2">
             <span>Appointments -</span>
             <span className="text-[#098289] font-sf">{totalAppointments.toLocaleString()}</span>
           </div>
 
-          <div className="flex flex-wrap gap-4">
+          <div className="flex flex-wrap gap-5">
             {loading ? (
               <p className="text-sm text-gray-500 font-sf">Loading departments...</p>
             ) : error ? (
@@ -119,7 +119,7 @@ const AppointmentsPage: React.FC = () => {
                     </span>
                   </div>
 
-                  <div className="text-[#555B6C] font-sf  text-[14px]">
+                  <div className="text-[#555B6C] font-sf font-m text-[14px]">
                     {doctorsPerDept[dept] || 0} Doctors
                   </div>
                 </div>
