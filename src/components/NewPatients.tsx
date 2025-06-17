@@ -48,12 +48,9 @@ export default function NewPatientsTable() {
   };
 
   return (
-    // Outer container: Removed px-* to prevent overflow. It will now take `w-full` (1400px) from dashboard.tsx.
-    // Removed justify-center as the inner div will handle its own width.
+
     <div className="w-full ">
-      {/* Inner container: Changed max-w-6xl to w-full to fill the 1400px width. */}
-      {/* Apply padding here instead of the outer div. */}
-      <div className="w-full bg-white rounded-xl shadow-md overflow-hidden p-4 sm:p-6">
+      <div className="w-full bg-white rounded-xl  overflow-hidden p-4 sm:p-6">
         <div className="h-auto max-h-[90vh] overflow-y-auto">
           <div className="flex items-center gap-2 mb-4 text-[#0D1A12]">
             <img src="/Vector - 0.svg" alt="Add User" className="w-5 h-5 object-contain" />

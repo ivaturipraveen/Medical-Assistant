@@ -55,10 +55,7 @@ const Specializations = () => {
   const departments = Object.entries(doctorStats); // [ [ 'Cardiology', 652 ], ... ]
 
   return (
-    // Removed `max-w-[930px]` and `relative top-[20px] left-[10px]`.
-    // It will now take `w-full` from its parent (which is 930px in dashboard.tsx)
-    // and rely on internal padding.
-    <div className="w-full p-6 rounded-[10px] bg-white flex flex-col justify-between shadow-sm">
+    <div className="w-full p-4 rounded-[10px] bg-white flex flex-col justify-between ">
       {/* Header */}
       <div className="flex justify-between items-start w-full">
         <h2 className="h-[40px] text-lg font-semibold text-gray-900">

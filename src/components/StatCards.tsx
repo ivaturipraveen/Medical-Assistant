@@ -1,5 +1,10 @@
 import React, { useEffect, useState } from 'react';
-import { Users, UserPlus, CalendarDays, CalendarCheck2 } from 'lucide-react';
+import Person from '../assets/person.svg';
+import Doctor from '../assets/Doctor.svg';
+import calender from '../assets/calender.svg';
+import appointments from '../assets/appointment.svg';
+import up from '../assets/up.png';
+import down from '../assets/down.png';
 
 interface StatCardProps {
   title: string;
@@ -10,31 +15,38 @@ interface StatCardProps {
 }
 
 const StatCard = ({ title, value, icon, trend, trendColor }: StatCardProps) => {
+  const isNegativeTrend = trendColor.includes('red');
+
   return (
-    <div
-      className="relative bg-white rounded-[10px] shadow-sm p-4"
-      // The width is defined here and includes its own padding due to Tailwind's box-sizing.
-      // 4 * 332px (cards) + 3 * 6px (gaps) = 1328 + 18 = 1346px. This will fit within 1400px.
-      style={{ width: '332px', height: '140px' }}
-    >
-      {/* Title at top-left */}
-      <h3 className="text-sm font-medium text-black-400 absolute top-4 left-4">
+    <div className="w-[332px] h-[140px] relative z-0 bg-white rounded-[10px] p-4">
+      <h3 className="text-sm font-sf font-regular text-black-400 absolute top-4 left-4">
         {title}
       </h3>
 
-      {/* Icon shifted slightly down on the right */}
-      <div className="absolute top-[52px] right-4 w-[60px] h-[60px] p-[6px] rounded-[4px] flex items-center justify-center text-[rgb(9,130,137)] text-opacity-[0.15]">
-        {icon}
+      {/* Main icon */}
+      <div className="absolute top-[40px] right-4 flex text-[rgb(9,130,137)]">
+        <img src={icon as string} alt="icon" className="w-full h-full" />
       </div>
 
-      {/* Value and Trend on the left below title */}
-      <div className="mt-7 text-align-right justify-baseline absolute left-4">
-        <h2 className="text-5xl font-bold text-gray-900 text-left ">{value}</h2>
-        <p className={`text-xs font-medium mt-3 ${trendColor}`}>{trend} <span className='text-gray-500'>vs last month</span></p>
+      {/* Value and trend */}
+      <div className="mt-7 absolute left-4">
+        <h2 className="text-5xl font-bold text-gray-900 text-left">{value}</h2>
+
+        <div className="flex items-center justify-center gap-2 mt-3">
+          <img
+            src={isNegativeTrend ? down : up}
+            alt="trend icon"
+            className="w-3 h-3 "
+          />
+          <p className={`text-xs font-medium ${trendColor}`}>
+            {trend} <span className="text-gray-500">vs last month</span>
+          </p>
+        </div>
       </div>
     </div>
   );
 };
+
 
 
 const StatCards = () => {
@@ -73,29 +85,29 @@ const StatCards = () => {
       <StatCard
         title="Total Patients"
         value={stats.total_patients.toLocaleString()}
-        icon={<Users className="w-12 h-12" />}
-        trend="▲ 40% "
+        icon={Person}
+        trend=" 40% "
         trendColor="text-green-500"
       />
       <StatCard
         title="Total Doctors"
         value={stats.total_doctors.toLocaleString()}
-        icon={<UserPlus className="w-12 h-12" />}
-        trend="▲ 22% "
+        icon={Doctor}
+        trend="22% "
         trendColor="text-green-500"
       />
       <StatCard
         title="Total Appointments"
         value={stats.total_appointments.toLocaleString()}
-        icon={<CalendarDays className="w-12 h-12" />}
-        trend="▼ 13% "
+        icon={calender}
+        trend=" 13% "
         trendColor="text-red-500"
       />
       <StatCard
         title="Upcoming Appointments"
         value={stats.upcoming_appointments.toLocaleString()} 
-        icon={<CalendarCheck2 className="w-12 h-12" />}
-        trend="▲ 5% today"
+        icon={appointments}
+        trend="5% today"
         trendColor="text-green-500"
       />
     </div>

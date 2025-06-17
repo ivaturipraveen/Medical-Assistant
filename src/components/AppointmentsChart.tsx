@@ -28,7 +28,7 @@ const AppointmentTrendsContainer = () => {
     // Removed the explicit `w-[457px]` from this div.
     // It will now take `w-full` from its parent in dashboard.tsx (which allocates 457px to it).
     // The `p-6` will apply padding internally, respecting the `w-full` boundary.
-    <div className="w-full h-[367px] p-6 bg-white rounded-[10px] shadow">
+    <div className="w-full  p-6 bg-white rounded-[10px] h-[387px]">
       {/* Header */}
       <div className="flex justify-between items-center mb-4">
         <h2 className="text-sm font-semibold text-gray-900">Appointment Trends</h2>

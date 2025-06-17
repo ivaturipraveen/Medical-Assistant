@@ -1,3 +1,4 @@
+import { useNavigate, useLocation } from 'react-router-dom';
 import profileImg from '../assets/profile.svg';
 import notifyIcon from '../assets/notify.svg';
 import headlineIcon from '../assets/Headline.svg';
@@ -11,48 +12,65 @@ import {
 } from 'lucide-react';
 
 export default function Topbar() {
-  return (
-    // The header should take full width of its parent (which is 1920px from Dashboard.tsx).
-    // Removed 'w-[1920px]' and 'mx-auto' from here.
-    // 'px-10' adds 40px padding on left/right, making the inner content area 1920px - (2 * 40px) = 1840px.
-    // Removed 'justify-center' from header as the inner content will be centered.
-    <header className="w-full h-[64px] bg-white px-10 py-3 flex items-center border-b border-gray-200 shadow-sm">
-      {/* Inner content div: This is the actual 1400px wide content of the Topbar. */}
-      {/* 'mx-auto' here will center this 1400px div within the 1840px available space (1920px - 2*40px padding). */}
-      {/* 'justify-between' ensures items within this 1400px div are spaced out. */}
-      <div className="w-[1400px] h-[64px] flex items-center justify-between mx-auto">
-        {/* Left: Logo + Title + Navigation */}
-        <div className="flex items-center gap-10 w-[971px] h-[40px]">
-          {/* Logo + Medical Dashboard */}
-          <div className="flex items-center w-[189px] h-[24px]">
-            <img src={headlineIcon} alt="Headline Logo" className="w-[189px] h-[24px]" />
-          </div>
+  const navigate = useNavigate();
+  const location = useLocation();
 
-          {/* Navigation */}
-          <div className="flex items-center gap-6">
-            <button className="flex items-center gap-1 text-[#007C91] bg-[#E0F7FA] px-4 py-2 rounded-full w-[127px] h-[40px]">
+  const isActive = (path: string) => location.pathname === path;
+
+  return (
+    <header className="w-full h-[64px] bg-white fixed shadow-sm flex z-50 justify-center">
+      <div className="w-full font-sf max-w-[1440px] px-6 flex items-center justify-between">
+        {/* Left: Logo + Nav */}
+        <div className="flex items-center gap-10">
+          <img
+            src={headlineIcon}
+            alt="Headline Logo"
+            className="w-[189px] h-[24px] cursor-pointer"
+            onClick={() => navigate('/dashboard')}
+          />
+
+          <div className="flex items-center gap-2 text-sm">
+            <button
+              onClick={() => navigate('/dashboard')}
+              className={`flex items-center gap-1 px-4 py-2 rounded-full transition
+                ${isActive('/dashboard') ? 'bg-[#E0F7FA] text-[#007C91]' : 'text-gray-700 hover:text-[#007C91]'}`}
+            >
               <Home className="w-4 h-4" />
               <span>Dashboard</span>
             </button>
-            <button className="flex items-center gap-1 hover:text-[#007C91] w-[140px] h-[40px]">
+
+            <button
+              onClick={() => navigate('/appointment')}
+              className={`flex items-center gap-1 px-4 py-2 rounded-full transition
+                ${isActive('/appointment') ? 'bg-[#E0F7FA] text-[#007C91]' : 'text-gray-700 hover:text-[#007C91]'}`}
+            >
               <CalendarDays className="w-4 h-4" />
               <span>Appointments</span>
             </button>
-            <button className="flex items-center gap-1 hover:text-[#007C91] w-[102px] h-[40px]">
+
+            <button
+              onClick={() => navigate('/doctor')}
+              className={`flex items-center gap-1 px-4 py-2 rounded-full transition
+                ${isActive('/doctor') ? 'bg-[#E0F7FA] text-[#007C91]' : 'text-gray-700 hover:text-[#007C91]'}`}
+            >
               <User className="w-4 h-4" />
               <span>Doctors</span>
             </button>
-            <button className="flex items-center gap-1 hover:text-[#007C91] w-[103px] h-[40px]">
+
+            <button
+              onClick={() => alert('Patients page not set up yet')}
+              className="flex items-center gap-1 px-4 py-2 rounded-full text-gray-700 hover:text-[#007C91]"
+            >
               <Users className="w-4 h-4" />
               <span>Patients</span>
             </button>
           </div>
         </div>
 
-        {/* Right: Search + Notification + Profile */}
-        <div className="flex items-center gap-4 w-[409px] h-[40px]">
+        {/* Right: Search + Notifications + Profile */}
+        <div className="flex items-center gap-4">
           {/* Search */}
-          <div className="flex items-center bg-[#e6f4f1] rounded-full w-[281px] h-[40px] px-3">
+          <div className="flex items-center bg-[#e6f4f1] rounded-full px-3 w-[280px] h-[40px]">
             <Search className="w-4 h-4 text-gray-500" />
             <input
               type="text"
@@ -63,22 +81,17 @@ export default function Topbar() {
 
           {/* Notification */}
           <div className="relative w-[40px] h-[40px] flex items-center justify-center">
-            <img
-              src={notifyIcon}
-              alt="Notifications"
-              className="w-5 h-5"
-            />
-            <span className="absolute top-1 right-1 w-2 h-2 border-white" />
+            <img src={notifyIcon} alt="Notifications" />
           </div>
 
           {/* Profile */}
-          <div className="flex items-center gap-1 w-[40px] h-[40px] cursor-pointer">
+          <div className="flex items-center pr-2 gap-1 cursor-pointer">
             <img
               src={profileImg}
-              alt="User profile picture"
+              alt="User profile"
               className="w-[40px] h-[40px] rounded-full object-cover"
             />
-            <ChevronDown className="w-[20px] h-[20px] text-gray-500 ml-1" />
+            <ChevronDown className="w-6 h-6 text-gray-500" />
           </div>
         </div>
       </div>
