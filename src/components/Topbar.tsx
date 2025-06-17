@@ -58,8 +58,9 @@ export default function Topbar() {
             </button>
 
             <button
-              onClick={() => alert('Patients page not set up yet')}
-              className="flex items-center gap-1 px-4 py-2 rounded-full text-gray-700 hover:text-[#007C91]"
+              onClick={() => navigate('/patients')}
+              className={`flex items-center gap-1 px-4 py-2 rounded-full transition
+                ${isActive('/patients') ? 'bg-[#E0F7FA] text-[#007C91]' : 'text-gray-700 hover:text-[#007C91]'}`}
             >
               <Users className="w-4 h-4" />
               <span>Patients</span>

@@ -82,7 +82,7 @@ const AppointmentsPage: React.FC = () => {
   const totalAppointments = Object.values(appointmentsPerDept).reduce((sum, count) => sum + count, 0);
 
   return (
-    <div className="min-h-screen w-full mt-15 font-sf">
+    <div className="min-h-screen max-w-[1400px] mt-15 font-sf">
       {/* Top spacing for Topbar */}
 
       {/* Page Content */}
