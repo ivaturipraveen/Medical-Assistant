@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import Person from '../assets/person.svg';
+import Person from '../assets/Person.svg';
 import Doctor from '../assets/Doctor.svg';
 import calender from '../assets/calender.svg';
 import appointments from '../assets/appointment.svg';
