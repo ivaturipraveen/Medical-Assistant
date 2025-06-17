@@ -171,6 +171,7 @@ const MedicalLoginDashboard = () => (
         <h2 className="text-xl sm:text-2xl font-bold">Welcome Back!</h2>
         <p className="text-sm text-gray-500">Please Sign in to access your dashboard</p>
       </div>
+      
         {/* Login Form */}
         <LoginForm />
       </div>

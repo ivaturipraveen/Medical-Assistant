@@ -1,12 +1,6 @@
 #root {
   /* Removed: max-width: 1280px; - This was correctly removed previously */
   margin: 0 auto; /* Keep margin auto for centering if the body itself has limited width */
-  /* Removed: padding: 2rem; - This was correctly removed previously */
-
-  /* REMOVED: width: 100%; - This was causing conflict with 1920px dashboard */
-  /* REMOVED: min-height: 100vh; - This should be on html/body if needed for overall page height */
-
-  /* Ensure no overflow is hidden at this level. */
   overflow: visible; /* Explicitly visible to prevent unintended clipping */
   /* Removed: text-align: center; - Not necessary for block-level layout */
 }

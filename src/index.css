@@ -1,66 +1,32 @@
+@import url('https://fonts.googleapis.com/css2?family=Geist:wght@100..900&display=swap');
+@font-face {
+  font-family: 'sf-pro-display';
+  src: url('/Fonts/sf-pro-display-bold.woff2') format('woff2');
+  font-weight: 700;
+  font-style: normal;
+}
+@font-face {
+  font-family: 'sf-pro-display';
+  src: url('/Fonts/sf-pro-display-regular.woff2') format('woff2');
+  font-weight: 400;
+  font-style: normal;
+}
+@font-face {
+  font-family: 'sf-pro-display';
+  src: url('/Fonts/sf-pro-display-medium.woff2') format('woff2');
+  font-weight: 500;
+  font-style: normal;
+}
 @import "tailwindcss";
+
+
+@theme{
+  --font-sf: sf-pro-display, 'sans-serif';
+  --font-geist: Geist,'times new roman', 'serif';
+}
 .super-blur {
   backdrop-filter: blur(225.88px);
   -webkit-backdrop-filter: blur(225.88px);
 }
 
 
-/* @font-face {
-  font-family: 'SF Pro Display';
-  src: url('/fonts.woff2') format('woff2');
-  font-weight: 500;
-  font-style: normal;
-}
-
-@font-face {
-  font-family: 'Geist';
-  src: url('/fonts/Geist-SemiBold.woff2') format('woff2');
-  font-weight: 600;
-  font-style: normal;
-}
-
-@layer utilities {
-  .custom-patient-name {
-    @apply font-[500] text-[14px] leading-[21px];
-    width: 111px;
-    height: 21px;
-    font-family: 'SF Pro Display', sans-serif;
-    background: linear-gradient(0deg, #555B6C, #555B6C),
-                linear-gradient(0deg, rgba(0, 0, 0, 0.2), rgba(0, 0, 0, 0.2));
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-  }
-
-  .custom-dob {
-    @apply text-[14px] leading-[21px] font-[500];
-    width: 108px;
-    height: 21px;
-    font-family: 'SF Pro Display', sans-serif;
-    color: #555B6C;
-  }
-
-  .custom-number {
-    @apply text-[14px] leading-[21px] font-[500];
-    width: 114px;
-    height: 21px;
-    font-family: 'SF Pro Display', sans-serif;
-    color: #555B6C;
-  }
-
-  .custom-header {
-    @apply text-[18px] leading-[28px] font-[600];
-    width: 115px;
-    height: 28px;
-    font-family: 'Geist', sans-serif;
-    color: #0D1A12;
-  }
-
-  .scrollbar-hide {
-    -ms-overflow-style: none;
-    scrollbar-width: none;
-  }
-
-  .scrollbar-hide::-webkit-scrollbar {
-    display: none;
-  }
-} */

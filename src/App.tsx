@@ -8,6 +8,7 @@ function App() {
   return (
     <Router>
       <div className="min-h-screen bg-gray-100 relative">
+        
         <Routes>
           <Route path="/" element={<MedicalLoginDashboard />} />
           <Route path="/dashboard" element={<Dashboard />} />
