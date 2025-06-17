@@ -1,4 +1,9 @@
 @import "tailwindcss";
+.super-blur {
+  backdrop-filter: blur(225.88px);
+  -webkit-backdrop-filter: blur(225.88px);
+}
+
 
 /* @font-face {
   font-family: 'SF Pro Display';

@@ -1,4 +1,4 @@
-import  { useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { FaBone } from 'react-icons/fa';
 import { GiBrain } from 'react-icons/gi';
 import { MdScience } from 'react-icons/md';
@@ -37,12 +37,14 @@ const Specializations = () => {
       )
       .then((res) => {
         const stats: DepartmentStats = {};
+
         res.data.doctors.forEach((doc) => {
           const dept = doc.department?.trim();
           if (dept && dept.toLowerCase() !== 'temp') {
             stats[dept] = (stats[dept] || 0) + 1;
           }
         });
+
         setDoctorStats(stats);
       })
       .catch((err: unknown) =>
@@ -50,10 +52,13 @@ const Specializations = () => {
       );
   }, []);
 
-  const departments = Object.entries(doctorStats);
+  const departments = Object.entries(doctorStats); // [ [ 'Cardiology', 652 ], ... ]
 
   return (
-    <div className="w-full max-w-[930px] p-6 rounded-[10px] bg-white flex flex-col justify-between shadow-sm relative top-[20px] left-[10px]">
+    // Removed `max-w-[930px]` and `relative top-[20px] left-[10px]`.
+    // It will now take `w-full` from its parent (which is 930px in dashboard.tsx)
+    // and rely on internal padding.
+    <div className="w-full p-6 rounded-[10px] bg-white flex flex-col justify-between shadow-sm">
       {/* Header */}
       <div className="flex justify-between items-start w-full">
         <h2 className="h-[40px] text-lg font-semibold text-gray-900">
@@ -65,17 +70,18 @@ const Specializations = () => {
       </div>
 
       {/* Specialization Cards */}
-      <div className="flex flex-wrap gap-[20px] mt-4">
+      <div className="flex gap-4 mt-4 overflow-x-auto">
         {departments.map(([title, count], index) => (
           <div
             key={index}
-            className="inline-flex flex-col items-center justify-center text-center gap-1 px-4 py-3 border border-gray-200 rounded-lg bg-white hover:shadow-md transition"
+            className="flex flex-col justify-between w-[155px] min-w-[155px] h-[104px] border border-gray-200 rounded-lg p-4 bg-white hover:shadow-md transition"
           >
             <div>{getIconByDepartment(title)}</div>
-            <div className="font-semibold text-gray-900 text-sm capitalize max-w-[160px] truncate">
+            <div className="font-semibold text-black-900 text-sm capitalize text-left">
               {title}
             </div>
-            <div className="text-xs text-gray-600">{count} Doctors</div>
+
+            <div className="text-xs text-gray-600 text-left">{count} Doctors</div>
           </div>
         ))}
       </div>

@@ -25,16 +25,21 @@ const latest = [...data].reverse().find(d => d.scheduled !== null);
 
 const AppointmentTrendsContainer = () => {
   return (
-    <div className="w-[457px] h-[367px] p-6 bg-white rounded-[10px] shadow">
+    // Removed the explicit `w-[457px]` from this div.
+    // It will now take `w-full` from its parent in dashboard.tsx (which allocates 457px to it).
+    // The `p-6` will apply padding internally, respecting the `w-full` boundary.
+    <div className="w-full h-[367px] p-6 bg-white rounded-[10px] shadow">
       {/* Header */}
       <div className="flex justify-between items-center mb-4">
         <h2 className="text-sm font-semibold text-gray-900">Appointment Trends</h2>
         <div className="flex gap-2">
           <select className="border rounded px-3 py-1 text-xs text-gray-700 h-[32px]">
             <option>Month</option>
+            {/* Options can be dynamically generated if needed */}
           </select>
           <select className="border rounded px-3 py-1 text-xs text-gray-700 h-[32px]">
             <option>Week</option>
+            {/* Options can be dynamically generated if needed */}
           </select>
         </div>
       </div>

@@ -63,7 +63,9 @@ const AppointmentsCard = () => {
 
   return (
     <>
-      <div className="bg-white rounded-[10px] p-4 sm:p-6 flex flex-col gap-6 w-full max-w-md sm:max-w-lg md:max-w-[455px] h-[600px]">
+      {/* Outer container: Removed max-w classes to let w-full take parent's exact width (455px). */}
+      {/* Padding classes (p-4 sm:p-6) will correctly apply within this w-full. */}
+      <div className="bg-white rounded-[10px] p-4 sm:p-6 flex flex-col gap-6 w-full h-[600px]">
         {/* Header */}
         <div className="flex justify-between items-center w-full">
           <h2 className="text-base sm:text-lg font-semibold text-[#0D1A12]">Appointments</h2>
@@ -81,7 +83,8 @@ const AppointmentsCard = () => {
             <FaArrowLeft />
           </button>
 
-          <div className="flex items-center gap-[1px] text-slate-800 overflow-x-auto">
+          {/* Adjusted gap for date items to distribute space better */}
+          <div className="flex items-center flex-grow text-slate-800 overflow-x-auto justify-around"> {/* Added flex-grow and justify-around */}
             {weekDates.map((dateObj) => {
               const isSelected = dateObj.isSame(selectedDate, "day");
               const isDisabled = isWeekend(dateObj);
@@ -89,7 +92,7 @@ const AppointmentsCard = () => {
               return (
                 <div
                   key={dateObj.format("YYYY-MM-DD")}
-                  className={`flex flex-col items-center px-2 py-1 rounded-md w-[48px] h-[50px] text-center ${
+                  className={`flex flex-col items-center px-2 py-1 rounded-md w-[48px] h-[50px] text-center flex-shrink-0 ${ // Added flex-shrink-0
                     isSelected ? "bg-[#F4F4F4] border border-teal-700" : ""
                   } ${
                     isDisabled
@@ -124,11 +127,12 @@ const AppointmentsCard = () => {
                 key={appt.appointment_id}
                 className="flex justify-between items-center border rounded-md overflow-hidden"
               >
-                <div className="flex items-center gap-3 px-3 py-2">
+                {/* Let this div grow to take available space, min-width to ensure content isn't too squished */}
+                <div className="flex items-center gap-3 px-3 py-2 flex-grow min-w-0">
                   <img
                     src={`https://i.pravatar.cc/60?img=${(idx % 70) + 1}`}
                     alt={appt.patient_name || "Unnamed"}
-                    className="w-10 h-10 rounded-full"
+                    className="w-10 h-10 rounded-full flex-shrink-0" // Added flex-shrink-0
                   />
                   <div>
                     <p className="font-semibold text-sm">
@@ -140,7 +144,9 @@ const AppointmentsCard = () => {
                     </div>
                   </div>
                 </div>
-                <div className="bg-teal-700 text-white px-4 py-3 flex flex-col items-start justify-center w-[150px]">
+                {/* Use explicit width for the right section or make it responsive */}
+                {/* Adjusted width to allow for flex-shrink if needed, but keeping fixed for now */}
+                <div className="bg-teal-700 text-white px-4 py-3 flex flex-col items-start justify-center w-[150px] flex-shrink-0">
                   <p className="text-sm font-semibold">{appt.doctor_name}</p>
                   <p className="text-xs">{appt.department}</p>
                 </div>
@@ -175,11 +181,12 @@ const AppointmentsCard = () => {
                   key={appt.appointment_id}
                   className="flex justify-between items-center border rounded-md mb-3 overflow-hidden"
                 >
-                  <div className="flex items-center gap-3 px-2 py-2 w-full">
+                  {/* Left section: allows text to wrap, ensures image doesn't shrink */}
+                  <div className="flex items-center gap-3 px-2 py-2 flex-grow min-w-0">
                     <img
                       src={`https://i.pravatar.cc/60?img=${(idx % 70) + 1}`}
                       alt={appt.patient_name || "Unnamed"}
-                      className="w-10 h-10 rounded-full"
+                      className="w-10 h-10 rounded-full flex-shrink-0"
                     />
                     <div className="text-left">
                       <p className="font-semibold text-sm">
@@ -195,7 +202,8 @@ const AppointmentsCard = () => {
                       </div>
                     </div>
                   </div>
-                  <div className="bg-teal-700 text-white px-4 py-3 flex flex-col items-start justify-center w-[210px]">
+                  {/* Right section: fixed width, flex-shrink-0 */}
+                  <div className="bg-teal-700 text-white px-4 py-3 flex flex-col items-start justify-center w-[210px] flex-shrink-0">
                     <p className="text-sm font-semibold">{appt.doctor_name}</p>
                     <p className="text-xs">{appt.department}</p>
                   </div>

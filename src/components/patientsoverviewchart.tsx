@@ -20,7 +20,10 @@ const PatientsOverview = () => {
           color: COLORS[index % COLORS.length],
         }));
         setChartData(coloredData);
-      });
+      })
+      .catch((err: unknown) =>
+        console.error('Failed to fetch age distribution data:', err)
+      );
   }, []);
 
   const total = chartData.reduce((sum, entry) => sum + entry.value, 0);
@@ -43,9 +46,12 @@ const PatientsOverview = () => {
   };
 
   return (
-    <div className="w-full max-w-[457px] bg-white rounded-[10px] shadow p-4 sm:p-6 mx-auto">
+    // Removed 'mx-auto'. The component will take its width from the parent in dashboard.tsx.
+    // 'w-full' will make it fill its assigned space. 'max-w-[457px]' ensures it doesn't grow beyond this.
+    <div className="w-full max-w-[457px] bg-white rounded-[10px] shadow p-4 sm:p-6">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:justify-between items-start sm:items-center mb-4 w-full max-w-[409px] h-[40px]">
+      {/* Changed inner div's max-w to w-full to correctly fill its parent (457px - padding). */}
+      <div className="flex flex-col sm:flex-row sm:justify-between items-start sm:items-center mb-4 w-full h-[40px]">
         <h2 className="text-lg font-semibold text-gray-900">Patients Overview</h2>
         <div className="flex gap-2 mt-2 sm:mt-0">
           <select className="border border-teal-600 text-sm px-3 py-1 rounded-md text-teal-700">
@@ -64,10 +70,11 @@ const PatientsOverview = () => {
       </div>
 
       {/* Chart and Legend */}
+      {/* Changed maxWidth to w-full to correctly fill its parent (457px - padding). */}
       <div
         className="flex flex-col md:flex-row md:items-center md:justify-between w-full"
         style={{
-          maxWidth: "409px",
+          // Removed maxWidth here as w-full handles it from the parent.
           gap: "58px",
           paddingTop: "16.02px",
           paddingBottom: "16.02px",
