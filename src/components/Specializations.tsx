@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import  { useEffect, useState } from 'react';
 import { FaBone } from 'react-icons/fa';
 import { GiBrain } from 'react-icons/gi';
 import { MdScience } from 'react-icons/md';
