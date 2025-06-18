@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { FaCheckCircle, FaCalendarAlt, FaEye, FaEyeSlash } from 'react-icons/fa';
 import star from '../assets/Star.svg'; 
-import ChatWidgetLauncher from './Button';
+
 
 const LoginForm = () => {
   const [activeTab, setActiveTab] = useState<'admin' | 'doctor'>('admin');
@@ -195,7 +195,7 @@ const MedicalLoginDashboard = () => (
     <LoginForm />
   </div>
 </div>
-  <ChatWidgetLauncher/>
+  
   </div>
 );
 

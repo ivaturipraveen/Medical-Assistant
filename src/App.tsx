@@ -7,6 +7,7 @@ import DoctorsGrid from './pages/Doctors/DocView';
 import AppointmentsPage from './pages/Appointments/Appointments';
 import PatientsPage from './pages/Patients/patients';
 import DepartmentAppointments from './pages/Appointments/AppointmetDepa';
+import ChatWidgetLauncher from './components/Button';
 
 function AppLayout() {
   const location = useLocation();
@@ -32,6 +33,7 @@ function App() {
   return (
     <Router>
       <AppLayout />
+      <ChatWidgetLauncher/>
     </Router>
   );
 }
