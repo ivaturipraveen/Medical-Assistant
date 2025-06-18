@@ -1,11 +1,12 @@
 import { useEffect, useState } from 'react';
+import { useLocation } from 'react-router-dom';
 import { FaStar, FaCalendarAlt } from 'react-icons/fa';
 import { FiHeart } from 'react-icons/fi';
 import axios from 'axios';
 import DoctorProfileModal from './profile';
 import DocProfile from '../../assets/DocProfile.svg';
 import DocP from '../../assets/DocP.svg';
-import dual from '../../assets/dual.svg'
+import dual from '../../assets/dual.svg';
 
 interface Doctor {
   id: number;
@@ -77,6 +78,10 @@ export default function DoctorsGrid() {
   const [categories, setCategories] = useState<string[]>([]);
   const [selectedCategory, setSelectedCategory] = useState<string>('All');
   const [selectedDoctor, setSelectedDoctor] = useState<Doctor | null>(null);
+  const [filteredDoctors, setFilteredDoctors] = useState<Doctor[]>([]);
+
+  const location = useLocation();
+  const searchQuery = new URLSearchParams(location.search).get('search') || '';
 
   useEffect(() => {
     const fetchData = async () => {
@@ -95,6 +100,26 @@ export default function DoctorsGrid() {
     fetchData();
   }, []);
 
+  useEffect(() => {
+    let results = doctors.filter((doc) => doc.name.toLowerCase()!=='temp doctor');
+    
+    // Filter doctors by search query
+    if (searchQuery) {
+      results = results.filter((doctor) =>
+        doctor.name.toLowerCase().includes(searchQuery.toLowerCase())
+      );
+    }
+
+    // Further filter by selected category
+    if (selectedCategory && selectedCategory !== 'All') {
+      results = results.filter(
+        (doctor) => doctor.department && doctor.department.trim().toLowerCase() === selectedCategory.trim().toLowerCase() 
+      );
+    }
+
+    setFilteredDoctors(results);
+  }, [searchQuery, selectedCategory, doctors]);
+
   const handleViewProfile = (doctor: Doctor) => {
     setSelectedDoctor(doctor);
   };
@@ -103,13 +128,15 @@ export default function DoctorsGrid() {
     (doc) => doc.name.toLowerCase() !== 'temp doctor'
   );
 
-  const filteredDoctors =
+  const filteredByCategory =
     selectedCategory === 'All'
       ? validDoctors
       : validDoctors.filter((doc) => doc.department === selectedCategory);
 
+  const finalFilteredDoctors = filteredDoctors.length > 0 ? filteredDoctors : filteredByCategory;
+
   return (
-    <div className=" w-[1400px] min-h-[992px] mx-auto mt-20 relative">
+    <div className="w-[1400px] min-h-[992px] mx-auto mt-20 relative">
       {/* Header */}
       <div className="flex justify-between items-center px-4 py-3">
         <h1 className="text-xl font-semibold font-[Geist]">Doctors</h1>
@@ -130,12 +157,12 @@ export default function DoctorsGrid() {
 
       {/* Cards Grid */}
       <div className="flex flex-wrap gap-[16px] pb-6 overflow-y-auto max-h-[900px]">
-        {filteredDoctors.length === 0 ? (
+        {finalFilteredDoctors.length === 0 ? (
           <p className="text-gray-500 mt-6 text-center w-full">
-            No doctors found for this category.
+            No doctors found for this category or search.
           </p>
         ) : (
-          filteredDoctors.map((doctor) => (
+          finalFilteredDoctors.map((doctor) => (
             <DoctorCard key={doctor.id} doctor={doctor} onViewProfile={handleViewProfile} />
           ))
         )}
