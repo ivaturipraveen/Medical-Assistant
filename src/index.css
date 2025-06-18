@@ -22,6 +22,9 @@
 *::-webkit-scrollbar {
   display: none;
 }
+a,select,button:hover {
+  cursor: pointer;
+}
 
 html, body {
   margin: 0;

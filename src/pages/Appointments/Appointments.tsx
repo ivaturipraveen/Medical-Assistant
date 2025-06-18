@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import axios from 'axios';
 import { FaBone } from 'react-icons/fa';
 import { GiBrain } from 'react-icons/gi';
 import { MdScience } from 'react-icons/md';
@@ -16,17 +17,15 @@ const departmentIcons: Record<string, React.ReactNode> = {
   'General Physician': <RiPulseLine />,
 };
 
-const fetchWithRetry = async (url: string, retries = 3): Promise<any> => {
+const axiosWithRetry = async (url: string, retries = 3): Promise<any> => {
   try {
-    const response = await fetch(url);
-    if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-    const data = await response.json();
-    if (data.error) throw new Error(data.error);
-    return data;
+    const response = await axios.get(url);
+    if (response.data.error) throw new Error(response.data.error);
+    return response.data;
   } catch (error) {
     if (retries > 0) {
       await new Promise(res => setTimeout(res, 1000));
-      return fetchWithRetry(url, retries - 1);
+      return axiosWithRetry(url, retries - 1);
     }
     throw error;
   }
@@ -45,18 +44,17 @@ const AppointmentsPage: React.FC = () => {
       setLoading(true);
       try {
         const [deptRes, apptStatsRes, doctorsRes] = await Promise.all([
-          fetchWithRetry('https://medical-assistant1.onrender.com/categories'),
-          fetchWithRetry('https://medical-assistant1.onrender.com/dashboard/appointments-by-department'),
-          fetchWithRetry('https://medical-assistant1.onrender.com/doctors'),
+          axiosWithRetry('https://medical-assistant1.onrender.com/categories'),
+          axiosWithRetry('https://medical-assistant1.onrender.com/dashboard/appointments-by-department'),
+          axiosWithRetry('https://medical-assistant1.onrender.com/doctors'),
         ]);
-
         const filteredDepts = (deptRes.categories || []).filter(
-          (d: string) => !d.toLowerCase().includes('temp')
-        );
+            (d: any) => typeof d === 'string' && !d.toLowerCase().includes('temp')
+          );
         setDepartments(filteredDepts);
 
         const apptMap: Record<string, number> = {};
-        apptStatsRes.data.forEach((item: any) => {
+        (apptStatsRes.data || []).forEach((item: any) => {
           apptMap[item.department] = item.count;
         });
         setAppointmentsPerDept(apptMap);

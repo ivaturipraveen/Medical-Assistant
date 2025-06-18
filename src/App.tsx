@@ -1,5 +1,5 @@
 import './App.css';
-import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, useLocation, useParams, useNavigate  } from 'react-router-dom';
 import Dashboard from './pages/Dashboard';
 import MedicalLoginDashboard from './components/loginrightsidebar';
 import Topbar from './components/Topbar';
@@ -8,6 +8,7 @@ import AppointmentsPage from './pages/Appointments/Appointments';
 import PatientsPage from './pages/Patients/patients';
 import DepartmentAppointments from './pages/Appointments/AppointmetDepa';
 import ChatWidgetLauncher from './components/Button';
+import DoctorAppointmentsPage from './pages/Appointments/DoctorAppointmentsPage';
 
 function AppLayout() {
   const location = useLocation();
@@ -24,11 +25,27 @@ function AppLayout() {
         <Route path="/appointment" element={<AppointmentsPage />} />
         <Route path="/patients" element={<PatientsPage />} />
         <Route path="/appointments/department/:deptName" element={<DepartmentAppointments/>} />
+         <Route path="/" element={<DepartmentAppointments/>} />
+        <Route path="/appointments/:doctorName" element={<DoctorAppointmentsRoute />} />
       </Routes>
     </div>
   );
 }
+function DoctorAppointmentsRoute() {
+  const { doctorName } = useParams<{ doctorName: string }>(); 
+  const navigate = useNavigate();  
+  
+  const handleCloseSidebar = () => {
+    navigate(-1);  
+  };
 
+  return (
+    <DoctorAppointmentsPage
+      doctorName={doctorName || ""}  
+      onClose={handleCloseSidebar}   
+    />
+  );
+}
 function App() {
   return (
     <Router>

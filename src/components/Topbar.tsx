@@ -92,7 +92,7 @@ export default function Topbar() {
 
   const handleLogout = () => {
     localStorage.removeItem('auth_token'); // Example for clearing token
-    navigate('/login'); // Redirect to login page
+    navigate('/'); // Redirect to login page
   };
 
   return (

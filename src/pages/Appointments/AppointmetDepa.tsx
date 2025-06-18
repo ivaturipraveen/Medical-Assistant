@@ -1,8 +1,9 @@
 import React, { useEffect, useState } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
-import { FaStar, FaCalendarAlt } from 'react-icons/fa';
+import { useParams } from 'react-router-dom';
+import { FaStar, FaCalendarAlt, FaArrowLeft } from 'react-icons/fa';
 import DocProfile from '../../assets/DocProfile.svg';
 import dual from '../../assets/dual.svg';
+import DoctorAppointmentsPage from './DoctorAppointmentsPage';
 
 interface Doctor {
   id: number;
@@ -23,12 +24,13 @@ interface Appointment {
 
 const DepartmentAppointments: React.FC = () => {
   const { deptName } = useParams<{ deptName: string }>();
-  const navigate = useNavigate();
   const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [doctors, setDoctors] = useState<Doctor[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [doctorPatientCount, setDoctorPatientCount] = useState<Record<string, number>>({});
+  const [selectedDoctorName, setSelectedDoctorName] = useState<string | null>(null);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -77,13 +79,19 @@ const DepartmentAppointments: React.FC = () => {
     fetchData();
   }, [deptName]);
 
-  const handleAppointmentClick = (doctorId: number) => {
-    navigate(`/appointments/${doctorId}`);
+  const handleAppointmentClick = (doctorName: string) => {
+    setSelectedDoctorName(doctorName);
+    setIsSidebarOpen(true);
+  };
+
+  const closeSidebar = () => {
+    setIsSidebarOpen(false);
+    setSelectedDoctorName(null);
   };
 
   return (
-    <div className="w-full h-screen pt-20 ">
-      <div className="w-[1400px] max-w-[1400px] h-screen mx-auto bg-white p-6 rounded-2xl ">
+    <div className="w-full h-screen pt-20">
+      <div className="w-[1400px] max-w-[1400px] h-screen mx-auto bg-white p-6 rounded-2xl">
         {/* Header */}
         <div className="w-full flex items-center justify-between mb-6">
           <h1 className="text-[20px] font-semibold text-black">
@@ -118,14 +126,12 @@ const DepartmentAppointments: React.FC = () => {
                     </div>
 
                     <div className="mt-1">
-                      <h2 className="text-[16px] font-bold text-gray-900 text-left">
-                         {doc.name}
-                      </h2>
+                      <h2 className="text-[16px] font-bold text-gray-900 text-left">{doc.name}</h2>
                     </div>
 
                     <div className="flex gap-3 mt-2">
                       <button
-                        onClick={() => handleAppointmentClick(doc.id)}
+                        onClick={() => handleAppointmentClick(doc.name)} // Open appointments in sidebar
                         className="bg-teal-600 hover:bg-teal-700 text-white text-sm px-4 py-[6px] rounded-md flex items-center gap-2"
                       >
                         <FaCalendarAlt className="text-[14px]" /> Appointments
@@ -144,6 +150,27 @@ const DepartmentAppointments: React.FC = () => {
           </div>
         )}
       </div>
+
+      {/* Sidebar for DoctorAppointmentsPage */}
+      {isSidebarOpen && selectedDoctorName && (
+        <div className="fixed inset-0 z-50 flex items-start justify-end bg-black/50">
+          <div className="bg-white w-[500px] h-full overflow-y-auto rounded-l-xl shadow-xl transform transition-transform duration-300 translate-x-0">
+            {/* Side arrow for closing */}
+            <div className="flex items-center justify-between p-4">
+              <FaArrowLeft
+                onClick={closeSidebar}
+                className="cursor-pointer text-gray-600"
+                size={24}
+              />
+            </div>
+
+            <DoctorAppointmentsPage
+              doctorName={selectedDoctorName} // Pass selected doctor name here
+              onClose={closeSidebar} // Pass the close function for sidebar
+            />
+          </div>
+        </div>
+      )}
     </div>
   );
 };

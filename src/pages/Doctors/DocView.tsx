@@ -146,7 +146,7 @@ export default function DoctorsGrid() {
         >
           <option value="All">All</option>
           {categories
-            .filter((cat) => cat.toLowerCase() !== 'temp')
+            .filter((cat) => typeof cat === 'string' && cat.toLowerCase() !== 'temp')
             .map((cat, i) => (
               <option key={i} value={cat}>
                 {cat}
