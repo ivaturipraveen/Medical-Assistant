@@ -16,8 +16,8 @@ async def book_appointment(request: Request):
         body       = await request.json()
         print(body)
         raw_dname  = body["dname"]
-        raw_date   = body.get("date")      # e.g. "2025-05-31"
-        raw_slot   = body["sslot"]         # e.g. "4pm" or "4:00 PM"
+        raw_date   = body.get("date")     
+        raw_slot   = body["sslot"]         
         patient_id = body["pid"]
         raw_phone  = body.get("phone", "")
 
@@ -26,6 +26,8 @@ async def book_appointment(request: Request):
         parsed_date = parse_date(raw_date) if raw_date else date.today()
         parsed_time = parse_time_input(raw_slot)
         requested_dt = datetime.combine(parsed_date, parsed_time)
+        new_day = requested_dt.strftime('%a')         # e.g. 'Mon'
+        new_time_slot = requested_dt.time()           # e.g. 08:30:00
 
         # — Find doctor —
         result = find_doctor_by_name(cursor, raw_dname)
@@ -35,7 +37,7 @@ async def book_appointment(request: Request):
 
         # Get doctor ID and email
         cursor.execute("""
-            SELECT id, email,department 
+            SELECT id, email, department 
             FROM doctors 
             WHERE LOWER(name) = %s
         """, (matched_name.lower(),))
@@ -48,13 +50,25 @@ async def book_appointment(request: Request):
 
         # — Check for existing appointment —
         cursor.execute(
-            "SELECT id, doctor_id, calendar_event_id FROM appointments WHERE patient_id = %s",
+            "SELECT id, doctor_id, appointment_time, calendar_event_id FROM appointments WHERE patient_id = %s",
             (patient_id,)
         )
         existing = cursor.fetchone()
 
         if existing:
-            apt_id, old_doctor_id, old_event_id = existing
+            apt_id, old_doctor_id, old_time, old_event_id = existing
+
+            # Mark old doctor's previous slot as available
+            old_day = old_time.strftime('%a')
+            old_time_slot = old_time.time()
+            cursor.execute(
+                """
+                UPDATE doctor_availability
+                   SET is_available = true
+                 WHERE doctor_id = %s AND day_of_week = %s AND time_slot = %s
+                """,
+                (old_doctor_id, old_day, old_time_slot)
+            )
 
             # Get the old doctor's email for calendar event update
             cursor.execute("SELECT email FROM doctors WHERE id = %s", (old_doctor_id,))
@@ -94,14 +108,27 @@ async def book_appointment(request: Request):
             (phone, doctor_id, patient_id)
         )
 
+        # — Mark new doctor's new slot as unavailable —
+        cursor.execute(
+            """
+            UPDATE doctor_availability
+               SET is_available = false
+             WHERE doctor_id = %s AND day_of_week = %s AND time_slot = %s
+            """,
+            (doctor_id, new_day, new_time_slot)
+        )
+
         # — Commit all booking-related DB changes —
         conn.commit()
+
+        # — Send confirmation SMS —
         message_body = f"Your appointment with {matched_name} from {doctor_department} department has been booked on the date {requested_dt.strftime('%Y-%m-%d')} at {requested_dt.strftime('%I:%M %p')}. Please arrive 10 minutes early. -Medical Clinic"
         client.messages.create(
-                    to=phone ,
-                    from_="+19788008375",
-                    body=message_body,
-                )
+            to=phone,
+            from_="+19788008375",
+            body=message_body,
+        )
+
         # — Calendar integration (best-effort) —
         try:
             if existing:
@@ -129,7 +156,6 @@ async def book_appointment(request: Request):
                     (calendar_event_id, appointment_id)
                 )
                 conn.commit()
-          
 
         except Exception as cal_err:
             print("⚠️ Calendar error (booking persisted):", cal_err)
