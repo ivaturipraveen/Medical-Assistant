@@ -12,7 +12,7 @@ import DoctorAppointmentsPage from './pages/Appointments/DoctorAppointmentsPage'
 
 function AppLayout() {
   const location = useLocation();
-  const hideTopbar = location.pathname === '/';
+  const hideTopbar = location.pathname === '/' || location.pathname === '/chatWidget';
 
   return (
     <div className="w-screen h-screen bg-[#F4F8FB] overflow-x-hidden">
@@ -25,11 +25,9 @@ function AppLayout() {
         <Route path="/appointment" element={<AppointmentsPage />} />
         <Route path="/patients" element={<PatientsPage />} />
         <Route path="/appointments/department/:deptName" element={<DepartmentAppointments/>} />
-         <Route path="/" element={<DepartmentAppointments/>} />
+        <Route path="/" element={<DepartmentAppointments/>} />
         <Route path="/appointments/:doctorName" element={<DoctorAppointmentsRoute />} />
-                 <Route path="/chatWidget" element={<ChatWidgetLauncher/>} />
-
-        
+        <Route path="/chatWidget" element={<ChatWidgetLauncher/>} />
       </Routes>
     </div>
   );
