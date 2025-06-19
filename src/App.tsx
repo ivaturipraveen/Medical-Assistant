@@ -27,6 +27,9 @@ function AppLayout() {
         <Route path="/appointments/department/:deptName" element={<DepartmentAppointments/>} />
          <Route path="/" element={<DepartmentAppointments/>} />
         <Route path="/appointments/:doctorName" element={<DoctorAppointmentsRoute />} />
+                 <Route path="/chatWidget" element={<ChatWidgetLauncher/>} />
+
+        
       </Routes>
     </div>
   );
@@ -50,7 +53,6 @@ function App() {
   return (
     <Router>
       <AppLayout />
-      <ChatWidgetLauncher/>
     </Router>
   );
 }

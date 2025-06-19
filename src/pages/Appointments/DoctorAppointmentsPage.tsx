@@ -181,7 +181,10 @@ const WeekView: React.FC<{
 };
 
 // Appointment Cards Component
-const AppointmentCards: React.FC<{
+
+
+
+ const AppointmentCards: React.FC<{
   appointments: Appointment[];
   selectedDate: dayjs.Dayjs;
 }> = ({ appointments, selectedDate }) => {
@@ -192,18 +195,34 @@ const AppointmentCards: React.FC<{
     return appointmentDate === formattedSelectedDate;
   });
 
-  const getStatusStyle = (status: string) => {
-    switch (status.toLowerCase()) {
-      case "finished":
-        return "bg-green-500 text-white";
-      case "up-coming":
-        return "bg-orange-500 text-white";
-      case "re-scheduled":
-        return "bg-gray-800 text-white";
-      default:
-        return "bg-gray-500 text-white";
-    }
-  };
+
+
+const getStatusStyle = (status: string, appointmentTime: string) => {
+  const isPast = dayjs(appointmentTime).isBefore(dayjs(), "minute");  // Check if the appointment time is in the past
+  const isUpcoming = dayjs(appointmentTime).isAfter(dayjs(), "minute"); // Check if the appointment time is in the future
+  
+  if (isPast) {
+    return { statusText: "Finished", colorClass: "bg-green-500 text-white" }; // Set as "Finished" for past appointments
+  }
+  
+  if (isUpcoming) {
+    return { statusText: "Up-Coming", colorClass: "bg-orange-500 text-white" }; // Set as "Up-Coming" for future appointments
+  }
+
+  switch (status.toLowerCase()) {
+    case "finished":
+      return { statusText: "Finished", colorClass: "bg-green-500 text-white" };
+    case "up-coming":
+      return { statusText: "Up-Coming", colorClass: "bg-orange-500 text-white" };
+    case "re-scheduled":
+      return { statusText: "Re-Scheduled", colorClass: "bg-gray-800 text-white" };
+    default:
+      return { statusText: "Scheduled", colorClass: "bg-gray-500 text-white" };
+  }
+};
+
+
+
 
   return (
     <div className="w-[408px] flex flex-col gap-3 mx-auto" style={{ height: "calc(100vh - 70px - 40px - 374px - 60px)" }}>
@@ -214,16 +233,7 @@ const AppointmentCards: React.FC<{
           </p>
         ) : (
           filteredAppointments.map((appt, idx) => {
-            const isUpcoming = dayjs(appt.appointment_time).isAfter(dayjs());
-            let customStatus = appt.status;
-
-            if (appt.status.toLowerCase() === "completed") {
-              customStatus = "Finished";
-            } else if (appt.status.toLowerCase() === "upcoming" || isUpcoming) {
-              customStatus = "Up-Coming";
-            } else if (appt.status.toLowerCase() === "rescheduled") {
-              customStatus = "Re-Scheduled";
-            }
+            const { statusText, colorClass } = getStatusStyle(appt.status, appt.appointment_time); // Use the returned object
 
             return (
               <div key={appt.appointment_id} className="w-[408px] h-[68px] flex items-center bg-white border border-gray-200 rounded-lg shadow-sm overflow-hidden">
@@ -247,9 +257,9 @@ const AppointmentCards: React.FC<{
                 </div>
                 <div className="px-4 py-3">
                   <div
-                    className={`px-4 py-2 rounded-md text-[14px] font-medium ${getStatusStyle(customStatus)} min-w-[100px] text-center`}
+                    className={`px-4 py-2 rounded-md text-[14px] font-medium ${colorClass} min-w-[100px] text-center`}
                   >
-                    {customStatus}
+                    {statusText}
                   </div>
                 </div>
               </div>

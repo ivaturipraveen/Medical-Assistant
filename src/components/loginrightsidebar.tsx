@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { FaCheckCircle, FaCalendarAlt, FaEye, FaEyeSlash } from 'react-icons/fa';
 import star from '../assets/Star.svg'; 
+import ChatWidgetLauncher from './Button';
 
 
 const LoginForm = () => {
@@ -195,7 +196,7 @@ const MedicalLoginDashboard = () => (
     <LoginForm />
   </div>
 </div>
-  
+  <ChatWidgetLauncher/>
   </div>
 );
 
