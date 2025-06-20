@@ -62,7 +62,7 @@ const Specializations = () => {
           Latest Updates On Specializations
         </h2>
         <button className="text-emerald-800 border border-emerald-800 w-[82px] h-[40px] pt-[12px] pr-[16px] pb-[12px] pl-[16px]  rounded-[4px] text-sm hover:bg-emerald-50 transition mt-[-1px]">
-          View all
+          View&nbsp;all
         </button> 
       </div>
 
