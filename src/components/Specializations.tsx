@@ -57,11 +57,11 @@ const Specializations = () => {
   return (
     <div className="w-full p-4 rounded-[10px] bg-white flex flex-col justify-between ">
       {/* Header */}
-      <div className="flex justify-between items-start w-full">
-        <h2 className=" w-[800px] h-[40px] text-lg font-semibold text-gray-900">
+      <div className="flex justify-between items-start w-[882px] h-[40px]">
+        <h2 className="  text-lg font-semibold text-gray-900">
           Latest Updates On Specializations
         </h2>
-        <button className="text-emerald-800 border border-emerald-800 w-[82px] h-[40px] pt-[9px] pr-[16px] pb-[12px] pl-[16px] justify-items-start rounded-[4px] text-sm hover:bg-emerald-50 transition mt-[-4px]">
+        <button className="text-emerald-800 border border-emerald-800 w-[82px] h-[40px] pt-[12px] pr-[16px] pb-[12px] pl-[16px]  rounded-[4px] text-sm hover:bg-emerald-50 transition mt-[-1px]">
           View all
         </button> 
       </div>
