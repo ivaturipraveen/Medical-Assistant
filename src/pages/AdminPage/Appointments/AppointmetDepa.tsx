@@ -1,9 +1,10 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef,useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { FaStar, FaCalendarAlt, FaArrowLeft } from 'react-icons/fa';
-import DocProfile from '../../assets/DocProfile.svg';
-import dual from '../../assets/dual.svg';
+import DocProfile from '../../../assets/DocProfile.svg';
+import dual from '../../../assets/dual.svg';
 import DoctorAppointmentsPage from './DoctorAppointmentsPage';
+import { useLocation } from 'react-router-dom';
 
 interface Doctor {
   id: number;
@@ -31,6 +32,23 @@ const DepartmentAppointments: React.FC = () => {
   const [doctorPatientCount, setDoctorPatientCount] = useState<Record<string, number>>({});
   const [selectedDoctorName, setSelectedDoctorName] = useState<string | null>(null);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const location = useLocation();
+  const fromSearch = location.state?.fromSearch || false;
+  const searchedDoctorName = location.state?.doctorName || null;
+  const autoClickRef = useRef<{ [doctorName: string]: HTMLButtonElement | null }>({});
+
+
+  useEffect(() => {
+    if (fromSearch && searchedDoctorName && doctors.length > 0) {
+      // Trigger simulated click on the matching doctor's "Appointments" button
+      const btn = autoClickRef.current[searchedDoctorName];
+      if (btn) {
+        setTimeout(() => {
+          btn.click();
+        }, 300); // Delay to ensure render complete
+      }
+    }
+  }, [fromSearch, searchedDoctorName, doctors]);  
 
   useEffect(() => {
     const fetchData = async () => {
@@ -82,7 +100,7 @@ const DepartmentAppointments: React.FC = () => {
   const handleAppointmentClick = (doctorName: string) => {
     setSelectedDoctorName(doctorName);
     setIsSidebarOpen(true);
-  };
+  };  
 
   const closeSidebar = () => {
     setIsSidebarOpen(false);
@@ -130,12 +148,15 @@ const DepartmentAppointments: React.FC = () => {
                     </div>
 
                     <div className="flex gap-3 mt-2">
-                      <button
-                        onClick={() => handleAppointmentClick(doc.name)} // Open appointments in sidebar
-                        className="bg-teal-600 hover:bg-teal-700 text-white text-sm px-4 py-[6px] rounded-md flex items-center gap-2"
-                      >
-                        <FaCalendarAlt className="text-[14px]" /> Appointments
-                      </button>
+                     <button
+  ref={(el) => {
+    if (el) autoClickRef.current[doc.name] = el;
+  }}
+  onClick={() => handleAppointmentClick(doc.name)}
+  className="bg-teal-600 hover:bg-teal-700 text-white text-sm px-4 py-[6px] rounded-md flex items-center gap-2"
+>
+  <FaCalendarAlt className="text-[14px]" /> Appointments
+</button>
                     </div>
                   </div>
 

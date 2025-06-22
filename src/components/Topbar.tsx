@@ -1,13 +1,23 @@
+
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useState, useEffect } from 'react';
 import profileImg from '../assets/profile.svg';
 import notifyIcon from '../assets/notify.svg';
 import headlineIcon from '../assets/Headline.svg';
-import { Home, CalendarDays, User, Users, ChevronDown, Search, Stethoscope } from 'lucide-react';
+import {
+  Home,
+  CalendarDays,
+  User,
+  Users,
+  ChevronDown,
+  Search,
+  Stethoscope,
+  CalendarDaysIcon,
+} from 'lucide-react';
 
 interface Suggestion {
   name: string;
-  type: 'doctor' | 'patient';
+  type: 'doctor' | 'patient' | 'appointments';
   title: string;
   subtitle: string;
 }
@@ -20,6 +30,7 @@ export default function Topbar() {
   const [showSearchResults, setShowSearchResults] = useState(false);
   const [doctors, setDoctors] = useState<any[]>([]);
   const [patients, setPatients] = useState<any[]>([]);
+  const [appointments, setAppointments] = useState<any[]>([]);
 
   const isActive = (path: string) => location.pathname === path;
 
@@ -30,39 +41,63 @@ export default function Topbar() {
 
   useEffect(() => {
     fetch('https://medical-assistant1.onrender.com/doctors')
-      .then(res => res.json())
-      .then(data => setDoctors(data.doctors || []))
+      .then((res) => res.json())
+      .then((data) => setDoctors(data.doctors || []))
       .catch(console.error);
+
     fetch('https://medical-assistant1.onrender.com/patients')
-      .then(res => res.json())
-      .then(data => setPatients(data.patients || []))
+      .then((res) => res.json())
+      .then((data) => setPatients(data.patients || []))
+      .catch(console.error);
+
+    fetch('https://medical-assistant1.onrender.com/appointments')
+      .then((res) => res.json())
+      .then((data) => setAppointments(data.appointments || []))
       .catch(console.error);
   }, []);
 
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const query = e.target.value;
     setGlobalSearch(query);
+
     if (query.trim()) {
       const matchedSuggestions: Suggestion[] = [];
 
-      doctors.forEach(doc => {
+      // Doctors
+      doctors.forEach((doc) => {
         if (doc.name.toLowerCase().includes(query.toLowerCase())) {
           matchedSuggestions.push({
             name: doc.name,
             type: 'doctor',
             title: doc.name,
-            subtitle: doc.department || ''
+            subtitle: doc.department || '',
           });
         }
       });
 
-      patients.forEach(p => {
+      // Patients
+      patients.forEach((p) => {
         if (p.full_name.toLowerCase().includes(query.toLowerCase())) {
           matchedSuggestions.push({
             name: p.full_name,
             type: 'patient',
             title: p.full_name,
-            subtitle: `Doctor: ${p.doctor_name || 'Unknown'}`
+            subtitle: `Doctor: ${p.doctor_name || 'Unknown'}`,
+          });
+        }
+      });
+
+      // Appointments
+      appointments.forEach((appt) => {
+        if (
+          appt.doctor_name.toLowerCase().includes(query.toLowerCase()) ||
+          appt.patient_name.toLowerCase().includes(query.toLowerCase())
+        ) {
+          matchedSuggestions.push({
+            name: appt.appointment_id.toString(),
+            type: 'appointments',
+            title: `${appt.patient_name} with ${appt.doctor_name}`,
+            subtitle: `Time: ${appt.appointment_time}`,
           });
         }
       });
@@ -70,35 +105,55 @@ export default function Topbar() {
       setSuggestions(matchedSuggestions);
       setShowSearchResults(true);
     } else {
+      // Clear search suggestions
       setSuggestions([]);
       setShowSearchResults(false);
+
+      // Clear ?search= from URL
+      if (location.pathname.includes('/patients')) {
+        navigate('/patients');
+      } else if (location.pathname.includes('/doctor')) {
+        navigate('/doctor');
+      } else if (location.pathname.includes('/appointment')) {
+        navigate('/appointment');
+      }
     }
   };
 
   const handleSearchResultClick = (suggestion: Suggestion) => {
     if (suggestion.type === 'doctor') {
-      navigate(`/doctor?search=${suggestion.name}`);
-    } else {
-      navigate(`/patients?search=${suggestion.name}`);
+      navigate(`/doctor?search=${encodeURIComponent(suggestion.name)}`);
+    } else if (suggestion.type === 'patient') {
+      navigate(`/patients?search=${encodeURIComponent(suggestion.name)}`);
+    } else if (suggestion.type === 'appointments') {
+      const appt = appointments.find(
+        (appt) => appt.appointment_id.toString() === suggestion.name
+      );
+      if (appt) {
+        const department = encodeURIComponent(appt.department);
+        navigate(`/appointments/department/${department}`, {
+          state: {
+            fromSearch: true,
+            doctorName: appt.doctor_name,
+            selectedDate: appt.appointment_time, // pass date string
+          },
+        });
+      }
     }
     setShowSearchResults(false);
   };
 
-  // Profile Dropdown functionality
   const [isDropdownVisible, setIsDropdownVisible] = useState(false);
-  const toggleDropdown = () => {
-    setIsDropdownVisible(!isDropdownVisible);
-  };
-
+  const toggleDropdown = () => setIsDropdownVisible(!isDropdownVisible);
   const handleLogout = () => {
-    localStorage.removeItem('auth_token'); // Example for clearing token
-    navigate('/'); // Redirect to login page
+    localStorage.removeItem('auth_token');
+    navigate('/');
   };
 
   return (
     <header className="w-full h-[64px] bg-white fixed shadow-sm flex z-50 justify-center">
       <div className="w-full font-sf max-w-[1440px] px-6 flex items-center justify-between">
-        {/* Left: Logo + Nav */}
+        {/* Left Nav */}
         <div className="flex items-center gap-10">
           <img
             src={headlineIcon}
@@ -122,7 +177,7 @@ export default function Topbar() {
           </div>
         </div>
 
-        {/* Right: Search + Notifications + Profile */}
+        {/* Right Search & Profile */}
         <div className="flex items-center gap-4">
           <div className="flex items-center bg-[#e6f4f1] rounded-full px-3 w-[280px] h-[40px] relative">
             <Search className="w-4 h-4 text-gray-500" />
@@ -142,7 +197,13 @@ export default function Topbar() {
                     className="px-4 py-2 cursor-pointer hover:bg-[#E0F7FA] flex items-start"
                   >
                     <div className="mr-2 mt-0.5">
-                      {s.type === 'patient' ? <Users size={18} /> : <Stethoscope size={18} />}
+                      {s.type === 'patient' ? (
+                        <Users size={18} />
+                      ) : s.type === 'doctor' ? (
+                        <Stethoscope size={18} />
+                      ) : (
+                        <CalendarDaysIcon size={18} />
+                      )}
                     </div>
                     <div>
                       <div className="text-sm font-medium">{s.title}</div>
@@ -158,7 +219,6 @@ export default function Topbar() {
             <img src={notifyIcon} alt="Notifications" />
           </div>
 
-          {/* Profile Dropdown */}
           <div className="relative">
             <div className="flex items-center pr-2 gap-1 cursor-pointer" onClick={toggleDropdown}>
               <img src={profileImg} alt="User profile" className="w-[40px] h-[40px] rounded-full object-cover" />

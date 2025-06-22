@@ -2,8 +2,8 @@ import { useEffect, useRef, useState } from 'react';
 import { FaStar, FaArrowLeft } from 'react-icons/fa';
 import { FiHeart } from 'react-icons/fi';
 import axios from 'axios';
-import Docp from '../../assets/dual.svg';
-import Docprofile from "../../assets/DocProfile.svg";
+import Docp from '../../../assets/dual.svg';
+import Docprofile from "../../../assets/DocProfile.svg";
 
 interface Doctor {
   id: number;

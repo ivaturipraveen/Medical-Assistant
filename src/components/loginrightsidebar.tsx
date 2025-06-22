@@ -1,9 +1,8 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { FaCheckCircle, FaCalendarAlt, FaEye, FaEyeSlash } from 'react-icons/fa';
-import star from '../assets/Star.svg'; 
+import star from '../assets/Star.svg';
 import ChatWidgetLauncher from './Button';
-
 
 const LoginForm = () => {
   const [activeTab, setActiveTab] = useState<'admin' | 'doctor'>('admin');
@@ -36,7 +35,32 @@ const LoginForm = () => {
         throw new Error(data.error || 'Login failed');
       }
 
-      navigate('/dashboard');
+            const currentLoginTime = new Date().toLocaleString();
+      const previousLoginTime = localStorage.getItem("lastLogin");
+  
+      // Move current `lastLogin` to `previousLogin` before setting new one
+      if (previousLoginTime) {
+        localStorage.setItem("previousLogin", previousLoginTime);
+      }
+  
+      // Store the current login time as `lastLogin`
+      localStorage.setItem('lastLogin', currentLoginTime);
+  
+
+
+      if (activeTab === 'admin') {
+        localStorage.setItem('userRole', 'admin');
+        localStorage.setItem('adminData', JSON.stringify(data.admin));
+        navigate('/dashboard');
+      } else if (activeTab === 'doctor') {
+        localStorage.setItem('userRole', 'doctor');
+        localStorage.setItem('doctorData', JSON.stringify(data.doctor));
+        navigate('/doctor-dashboard', {
+          state: {
+            doctor: data.doctor,
+          },
+        });
+      }
     } catch (error: unknown) {
       if (error instanceof Error) {
         console.error('Login error:', error);
@@ -122,81 +146,68 @@ const LoginForm = () => {
 const LeftPanel = () => {
   return (
     <>
-    <img
+      <img
         src={star}
         alt="Star BG"
         className="absolute w-full h-full object-top opacity-100 z-0 pointer-events-none select-none"
       />
-    <div className="relative flex flex-col justify-center items-start lg:items-center text-left w-auto px-3 sm:px-6 lg:px-5 pt-8 text-white bg-cover bg-no-repeat overflow-auto">
-      
-      {/* Star SVG background */}
-      
-
-      {/* Main Content */}
-      <div className="relative z-10">
-        <h2 className="font-sf text-xl sm:text-2xl md:text-3xl font-bold mb-6 leading-snug self-center lg:self-start">
-          Redefine Your Doctor Appointment<br />Experience!
-        </h2>
-
-        <div className="w-full flex justify-start">
-          <img
-            src="frame-28993.svg"
-            alt="Dashboard Illustration"
-            className="w-full max-w-md sm:max-w-lg md:max-w-xl lg:max-w-2xl h-auto object-contain"
-          />
-        </div>
-
-        <div className="font-sf grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6 text-sm sm:text-base mt-6 w-full max-w-4xl self-start lg:self-start">
-          {[
-            'Comprehensive Patient Management',
-            'Real-time Appointment Tracking',
-            'Advanced Analytics Dashboard',
-            'Secure Medical Records',
-          ].map((item) => (
-            <div key={item} className="flex items-center gap-3 sm:gap-4 whitespace-nowrap">
-              <FaCheckCircle className="text-white-300 text-xl sm:text-xl shrink-0" />
-              <span>{item}</span>
-            </div>
-          ))}
+      <div className="relative flex flex-col justify-center items-start lg:items-center text-left w-auto px-3 sm:px-6 lg:px-5 pt-8 text-white bg-cover bg-no-repeat overflow-auto">
+        <div className="relative z-10">
+          <h2 className="font-sf text-xl sm:text-2xl md:text-3xl font-bold mb-6 leading-snug self-center lg:self-start">
+            Redefine Your Doctor Appointment<br />Experience!
+          </h2>
+          <div className="w-full flex justify-start">
+            <img
+              src="frame-28993.svg"
+              alt="Dashboard Illustration"
+              className="w-full max-w-md sm:max-w-lg md:max-w-xl lg:max-w-2xl h-auto object-contain"
+            />
+          </div>
+          <div className="font-sf grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6 text-sm sm:text-base mt-6 w-full max-w-4xl self-start lg:self-start">
+            {[
+              'Comprehensive Patient Management',
+              'Real-time Appointment Tracking',
+              'Advanced Analytics Dashboard',
+              'Secure Medical Records',
+            ].map((item) => (
+              <div key={item} className="flex items-center gap-3 sm:gap-4 whitespace-nowrap">
+                <FaCheckCircle className="text-white-300 text-xl sm:text-xl shrink-0" />
+                <span>{item}</span>
+              </div>
+            ))}
+          </div>
         </div>
       </div>
-    </div>
     </>
   );
 };
 
-
 const MedicalLoginDashboard = () => (
   <div className="fixed inset-0 flex flex-col lg:flex-row font-sans overflow-hidden scrollbar-hide">
-    {/* Left Panel */}
-
     <div className="flex-1 h-full bg-gradient-to-br from-[#06B0BB] to-[#098289] flex items-center justify-center overflow-y-auto">
       <LeftPanel />
     </div>
 
-    {/* Right Panel */}
     <div className="flex-1 h-full bg-gradient-to-br from-white to-[#e6f9f9] flex flex-col justify-center items-center px-4 py-12">
-    {/* Super-blurred Glows */}
-  <div className="absolute w-[300px] h-[200px] top-[-100px] right-[-100px] bg-[#D4FCFF] rounded-full opacity-80 blur-[120px] z-0" />
-<div className="absolute w-[300px] h-[300px] bottom-[-100px] right-[-100px] bg-[#FFE188] rounded-full opacity-80 blur-[120px] z-0" />
+      <div className="absolute w-[300px] h-[200px] top-[-100px] right-[-100px] bg-[#D4FCFF] rounded-full opacity-80 blur-[120px] z-0" />
+      <div className="absolute w-[300px] h-[300px] bottom-[-100px] right-[-100px] bg-[#FFE188] rounded-full opacity-80 blur-[120px] z-0" />
 
-  <div className="flex items-center gap-2 mb-20 justify-center">
-    <FaCalendarAlt className="text-2xl text-[#007C91]" />
-    <h1 className="font-sf text-2xl sm:text-3xl font-semibold text-[#007C91]">Medical Dashboard</h1>
-  </div>
+      <div className="flex items-center gap-2 mb-20 justify-center">
+        <FaCalendarAlt className="text-2xl text-[#007C91]" />
+        <h1 className="font-sf text-2xl sm:text-3xl font-semibold text-[#007C91]">Medical Dashboard</h1>
+      </div>
 
-  <div className="flex flex-col items-center text-center w-full max-w-md mb-25">
-    {/* Welcome Message */}
-    <div className="mb-4">
-      <h2 className="font-sf text-xl sm:text-2xl font-bold">Welcome Back!</h2>
-      <p className="font-sf text-sm text-gray-500">Please Sign in to access your dashboard</p>
+      <div className="flex flex-col items-center text-center w-full max-w-md mb-25">
+        <div className="mb-4">
+          <h2 className="font-sf text-xl sm:text-2xl font-bold">Welcome Back!</h2>
+          <p className="font-sf text-sm text-gray-500">Please Sign in to access your dashboard</p>
+        </div>
+
+        <LoginForm />
+      </div>
     </div>
 
-    {/* Login Form */}
-    <LoginForm />
-  </div>
-</div>
-  <ChatWidgetLauncher/>
+    <ChatWidgetLauncher />
   </div>
 );
 

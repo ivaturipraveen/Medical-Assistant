@@ -60,7 +60,12 @@ const PatientsPage: React.FC = () => {
 
     setFilteredPatients(results);
   }, [searchQuery, selectedDepartment, patients]); // Trigger when search query, department or patients change
-
+  useEffect(() => {
+    if (!searchQuery) {
+      setSelectedDepartment('');
+    }
+  }, [searchQuery]);
+  
   return (
     <div className="w-[1400px] h-[992px] mx-auto bg-[#F4F8FB] pt-23">
       {/* Header Bar */}
@@ -70,10 +75,17 @@ const PatientsPage: React.FC = () => {
         </div>
 
         <select
-          value={selectedDepartment}
-          onChange={(e) => setSelectedDepartment(e.target.value)}
-          className="border border-[#098289] rounded-[4px] text-sm focus:outline-none w-[129px] h-[40px]"
-        >
+  value={selectedDepartment}
+  disabled={!!searchQuery}
+  onChange={(e) => setSelectedDepartment(e.target.value)}
+  className={`w-[129px] h-[40px] rounded-[4px] px-2 py-[8px] text-sm
+    ${searchQuery 
+      ? 'bg-gray-100 text-gray-400 cursor-not-allowed border-gray-300' 
+      : 'border-[2px] border-[#098289] text-gray-700'}
+  `}
+>
+
+
           <option value="">All Departments</option>
           {departments
             .filter((dept) => dept.toLowerCase() !== 'temp')
