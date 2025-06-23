@@ -12,15 +12,15 @@ interface Appointment {
   patient_id: number;
 }
 
-interface Patient {
-  id: number;
-  full_name: string;
-  phone_number: string;
-}
+// interface Patient {
+//   id: number;
+//   full_name: string;
+//   phone_number: string;
+// }
 
 const TodaysAppointment: React.FC = () => {
   const [appointments, setAppointments] = useState<Appointment[]>([]);
-  const [patients, setPatients] = useState<Patient[]>([]);
+  // const [patients, setPatients] = useState<Patient[]>([]);
 
   useEffect(() => {
     const fetchAppointmentsAndPatients = async () => {
