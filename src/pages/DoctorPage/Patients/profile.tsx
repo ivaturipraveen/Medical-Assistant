@@ -80,7 +80,7 @@ const PatientProfilePanel: React.FC<{
             <FaArrowLeft className="cursor-pointer text-gray-600" onClick={onClose}/>
           <h2 className="text-lg font-semibold text-center flex-1 -ml-4">Patient Profile</h2>
         </div>
-
+        
         {/* Profile Info */}
         <div className="flex flex-col items-center mt-2 w-[402px] min-h-[269px] pt-[16px] pb-[16px] border-b border-gray-200">
           <img src={avatarUrl} alt="avatar" className="w-[128px] h-[128px] min-h-[128px] rounded-full" />

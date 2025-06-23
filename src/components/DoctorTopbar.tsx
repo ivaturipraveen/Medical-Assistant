@@ -41,20 +41,20 @@ const DoctorTopbar = () => {
                   : 'bg-white hover:bg-[#b8dede]'
               }`}
             >
-              <Home className="w-4 h-4" />
-              <span>Dashboard</span>
-            </button>
-            <button
+              <Home className="w-8 h-8" />
+              <span>Dashboard</span> 
+           </button>
+            {/* <button
               onClick={() => navigate('/appointments')}
               className={`flex items-center gap-[6px] w-[130px] h-[40px] px-[12px] py-[8px] rounded-full text-sm transition-all ${
                 isActive('/appointments')
                   ? 'bg-[#DAECED]'
                   : 'bg-white hover:bg-[#b8dede]'
               }`}
-            >
-              <CalendarDays className="w-4 h-4" />
-              <span>Appointments</span>
-            </button>
+            > */} 
+              {/* <CalendarDays className="w-4 h-4" /> */}
+              {/* <span>Appointments</span> */}
+            {/* </button> */}
              <button
               onClick={() => navigate('/patientData')}
               className={`flex items-center gap-[6px] w-[103px] h-[40px] px-[12px] py-[8px] rounded-full text-sm transition-all ${
@@ -67,7 +67,7 @@ const DoctorTopbar = () => {
               <span>Patients</span>
             </button>
 
-            <button
+            {/* <button
               onClick={() => navigate('/DoctorSettings')}
               className={`flex items-center gap-[6px] w-[103px] h-[40px] px-[12px] py-[8px] rounded-full text-sm transition-all ${
                 isActive('/DoctorSettings')
@@ -77,7 +77,7 @@ const DoctorTopbar = () => {
             >
               <Settings className="w-4 h-4" />
               <span>Settings</span>
-            </button>
+            </button> */}
 
           </div>
         </div>
