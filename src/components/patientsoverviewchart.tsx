@@ -46,7 +46,7 @@ const PatientsOverview = () => {
   };
 
   return (
-    <div className="w-full max-w-[457px] h-[387px] bg-white rounded-[10px]  p-4 sm:p-6">
+    <div className=" max-w-[457px] h-[345px] bg-white rounded-[10px]  p-4 sm:p-6">
       <div className="flex flex-col sm:flex-row sm:justify-between items-start sm:items-center mb-4 w-full h-[40px]">
         <h2 className="text-lg font-semibold text-gray-900">Patients Overview</h2>
         <div className="flex gap-2 mt-2 sm:mt-0">

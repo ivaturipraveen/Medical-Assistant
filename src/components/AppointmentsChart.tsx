@@ -28,7 +28,7 @@ const AppointmentTrendsContainer = () => {
     // Removed the explicit `w-[457px]` from this div.
     // It will now take `w-full` from its parent in dashboard.tsx (which allocates 457px to it).
     // The `p-6` will apply padding internally, respecting the `w-full` boundary.
-    <div className="w-full  p-6 bg-white rounded-[10px] h-[387px]">
+    <div className="max-w-[457px] p-6 bg-white rounded-[10px] h-[345px]">
       {/* Header */}
       <div className="flex justify-between items-center mb-4">
         <h2 className="text-sm font-semibold text-gray-900">Appointment Trends</h2>
@@ -45,7 +45,7 @@ const AppointmentTrendsContainer = () => {
       </div>
 
       {/* Chart */}
-      <div style={{ height: '227px', width: '100%' }}>
+      <div className="pt-4"style={{ height: '227px', width: '100%' }}>
         <ResponsiveContainer width="100%" height="100%">
           <LineChart data={data}>
             <CartesianGrid strokeDasharray="3 3" vertical={false} />

@@ -28,10 +28,10 @@ const DoctorDashboard: React.FC = () => {
         </div>
        <div className="mt-5 flex gap-[15px] items-start">
   {/* Left Column */}
-  <div className="flex flex-col gap-4 w-[930px]">
+  <div className="flex flex-col gap-[24px] w-[925px]">
     
     {/* Top Row: Charts side-by-side */}
-    <div className="flex gap-[15px]">
+    <div className="flex gap-[16px]">
       <div className="flex-1">
         <AppointmentTrendsContainer />
       </div>
@@ -39,8 +39,6 @@ const DoctorDashboard: React.FC = () => {
         <PatientsOverview />
       </div>
     </div>
-
-    {/* Bottom: Today's Appointments full width */}
     <div>
       <TodaysAppointment />
     </div>

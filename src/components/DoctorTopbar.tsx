@@ -5,6 +5,7 @@ import notifyIcon from '../assets/notify.svg'; // Correct path to notification i
 import headlineIcon from '../assets/Headline.svg'; // Correct path to logo
 import { Home, CalendarDays, Users, MessageCircle, ChevronDown, Search } from 'lucide-react'; // Import necessary icons
 
+
 const DoctorTopbar = () => {
    const navigate = useNavigate(); 
   const [isDropdownVisible, setIsDropdownVisible] = useState(false);
@@ -35,10 +36,9 @@ const DoctorTopbar = () => {
             </button>
 
     
-
-
-            <button className="flex items-center gap-1 px-4 py-2 rounded-full text-gray-700">
-              <MessageCircle className="w-4 h-4" /><span>Messages</span>
+            <button   onClick={()=>navigate('/patientSettings')}  
+            className="flex items-center gap-1 px-4 py-2 rounded-full text-gray-700">
+              <MessageCircle className="w-4 h-4" /><span>Settings</span>
             </button>
           </div>
         </div>
@@ -49,7 +49,7 @@ const DoctorTopbar = () => {
             <Search className="w-4 h-4 text-gray-500" />
             <input
               type="text"
-              placeholder="Search Patients, Messages.."
+              placeholder="Search Patients, Appointments.."
               className="bg-transparent text-sm ml-2 outline-none placeholder:text-gray-400 w-full"
             />
           </div>

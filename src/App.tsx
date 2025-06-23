@@ -15,6 +15,7 @@ import DoctorDashboard from './pages/DoctorDashboard';
 import DoctorTopbar from './components/DoctorTopbar'; // Import DoctorTopbar
 import TodaysAppointment from './components/TodaysAppointments';
 import PatientData from './pages/DoctorPage/Patients/PatientsData';
+import PatientSettings from './pages/DoctorPage/Settings/settings';
 function AppLayout() {
   const location = useLocation();
   const navigate = useNavigate();
@@ -59,6 +60,7 @@ function AppLayout() {
         <Route path="/doctor-dashboard" element={<DoctorDashboard />} />
         <Route path="/todaysAppointments" element={<TodaysAppointment/>}/>
         <Route path="/patientData" element={<PatientData/>}/>
+        <Route path="/patientSettings" element={<PatientSettings/>}/>
       </Routes>
     </div>
   );

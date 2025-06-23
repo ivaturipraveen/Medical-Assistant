@@ -98,97 +98,91 @@ const PatientsPage: React.FC = () => {
   }, [filteredPatients, appointments, getRecentAppointment]);
 
   return (
-    <div className="w-full h-[1445px] mx-auto bg-[#F4F8FB] pt-5 px-10">
-      {/* Header Bar */}
-      <div className="flex justify-between items-center w-full h-[40px] bg-[#F4F8FB] p-4">
-  <div className="flex items-center gap-2">
-    <img src={dual} />
-    <h2 className="text-2xl text-black font-bold font-sf">Patients - {patients.length}</h2>
-  </div>
+  <div className="w-[1400px] h-[1286px] max-w-[1400px] mx-auto bg-[#F4F8FB] pt-[64px] flex flex-col gap-[24px]">
+    
+    {/* Header */}
+    <div className="w-[1399px] h-[40px] flex justify-between items-center ml-[1px] pt-[15px]">
 
-  <select
-    value={selectedDepartment}
-    onChange={(e) => setSelectedDepartment(e.target.value)}
-    className="border border-[#098289] rounded-[4px] text-sm focus:outline-none w-[180px] h-[40px]"
-  >
-    <option value="">All Departments</option>
-    {departments
-      .filter((dept) => dept.toLowerCase() !== 'temp')
-      .map((dept) => (
-        <option key={dept} value={dept}>
-          {dept}
-        </option>
-      ))}
-  </select>
-</div>
+      <div className="flex items-center gap-2">
+        <img src={dual} alt="dual icon" />
+        <h2 className="text-2xl text-black font-bold font-sf">Patients - {patients.length}</h2>
+      </div>
 
+      <select
+        value={selectedDepartment}
+        onChange={(e) => setSelectedDepartment(e.target.value)}
+        className="border border-[#098289] rounded-[4px] text-sm focus:outline-none w-[180px] h-[40px]"
+      >
+        <option value="">All Departments</option>
+        {departments
+          .filter((dept) => dept.toLowerCase() !== 'temp')
+          .map((dept) => (
+            <option key={dept} value={dept}>
+              {dept}
+            </option>
+          ))}
+      </select>
+    </div>
 
-      {/* Patient Information Table */}
-      <div className="w-full h-[1224px] mt-[58px] border border-[#D1E5D9] bg-white rounded-[12px] overflow-hidden">
-        <table className="w-full table-auto text-sm">
-          <thead className="bg-[#ECF5F6] h-[46px]">
-            <tr className="text-left text-gray-600">
-              <th className="py-3 px-4">Patient ID</th>
-              <th className="py-3 px-4">Patient Name</th>
-              <th className="py-3 px-4">Gender</th>
-              <th className="py-3 px-4">Age (DOB)</th>
-              <th className="py-3 px-4">Contact</th>
-              <th className="py-3 px-4">Consultation Type</th>
-              <th className="py-3 px-4">Recent Appointment</th>
-              <th className="py-3 px-4">Total Visits</th>
-              <th className="py-3 px-4">Actions</th>
+    {/* Content */}
+    <div className="w-[1400px] h-[1224px] border border-[#D1E5D9] bg-white rounded-[12px] overflow-hidden">
+      <table className="w-full table-auto text-sm">
+        <thead className="bg-[#ECF5F6] h-[46px]">
+          <tr className="text-left text-gray-600">
+            <th className="py-3 px-4">Patient ID</th>
+            <th className="py-3 px-4">Patient Name</th>
+            <th className="py-3 px-4">Gender</th>
+            <th className="py-3 px-4">Age (DOB)</th>
+            <th className="py-3 px-4">Contact</th>
+            <th className="py-3 px-4">Consultation Type</th>
+            <th className="py-3 px-4">Recent Appointment</th>
+            <th className="py-3 px-4">Total Visits</th>
+            <th className="py-3 px-4">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {filteredPatients.length === 0 ? (
+            <tr>
+              <td colSpan={9} className="text-center py-8 text-gray-400">
+                No patients found for this search or department.
+              </td>
             </tr>
-          </thead>
-          <tbody>
-            {filteredPatients.length === 0 ? (
-              <tr>
-                <td colSpan={9} className="text-center py-8 text-gray-400">
-                  No patients found for this search or department.
+          ) : (
+            filteredPatients.map((patient) => (
+              <tr key={patient.id} className="border-t border-[#E5E7EB]">
+                <td className="py-2 px-4">#{patient.id}</td>
+                <td className="py-2 px-4">{patient.full_name}</td>
+                <td className="py-2 px-4">Male</td>
+                <td className="py-2 px-4">{patient.dob}</td>
+                <td className="py-2 px-4">{patient.phone_number || 'Not provided'}</td>
+                <td className="py-2 px-4">
+                  <span className="text-[#098289] bg-[#0982891A] border border-[#098289] rounded-[16px] min-w-[84px] max-w-[480px] h-[28px] px-[10px] flex items-center justify-center text-sm">
+                    {patient.status}
+                  </span>
+                </td>
+                <td className="py-2 px-4">
+                  {recentAppointments[patient.id]
+                    ? new Date(recentAppointments[patient.id]?.appointment_time || '').toLocaleString()
+                    : 'No appointments'}
+                </td>
+                <td className="py-2 px-4">3</td>
+                <td className="py-2 px-4">
+                  <button
+                    className="bg-[#098289] text-white text-sm font-medium rounded-[16px] pt-[8px] pl-[10px] pr-[10px] pb-[8px] min-w-[84px] max-w-[480px] h-[28px] transition-all duration-300 ease-out"
+                    onClick={() => console.log(`Open Patient Profile Overlay for ID ${patient.id}`)}
+                  >
+                    View Profile
+                  </button>
                 </td>
               </tr>
-            ) : (
-              filteredPatients.map((patient) => (
-                <tr key={patient.id} className="border-t border-[#E5E7EB]">
-                  <td className="py-2 px-4">#{patient.id}</td>
-                  <td className="py-2 px-4">{patient.full_name}</td>
-                  <td className="py-2 px-4">Male</td>
-                  <td className="py-2 px-4">{patient.dob}</td>
-                  <td className="py-2 px-4">
-  {patient.phone_number ? patient.phone_number : "Not provided"}
-</td>
-
-                  {/*<td className="py-2 px-4">{patient.status}</td>*/}
-                  <td className="py-2 px-4">
-                    <span className="text-[#098289] bg-[#0982891A] border border-[#098289] rounded-[16px] min-w-[84px] max-w-[480px] h-[28px] px-[10px] flex items-center justify-center text-sm">
-                      {patient.status}
-                    </span>
-                  </td>
-
-                  <td className="py-2 px-4">
-                    {recentAppointments[patient.id]
-                      ? new Date(recentAppointments[patient.id]?.appointment_time || '').toLocaleString()
-                      : 'No appointments'}
-                  </td>
-                  <td className="py-2 px-4">3</td>
-                  <td className="py-2 px-4">
-                  <button className="bg-[#098289] text-white text-sm font-medium rounded-[16px] pt-[8px] pl-[10px] pr-[10px] pb-[8px]  min-w-[84px] max-w-[480px] h-[28px] transition-all duration-300 ease-out"
-                     onClick={() => {
-                    // You can expand this to open a modal or sidebar in future
-                   console.log(`Open Patient Profile Overlay for ID ${patient.id}`);
-                   }}
-                  >
-                   View Profile
-                  </button>
-
-                  </td>
-                </tr>
-              ))
-            )}
-          </tbody>
-        </table>
-      </div>
+            ))
+          )}
+        </tbody>
+      </table>
     </div>
-  );
+  </div>
+);
+
 };
 
 export default PatientsPage;

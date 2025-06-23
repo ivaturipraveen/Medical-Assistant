@@ -64,7 +64,7 @@ const TodaysAppointment: React.FC = () => {
 
   return (
 
-    <div className="m-[15px] w-[925px] h-[620px] bg-white shadow-lg p-6 rounded-[12px] border border-[#D1E5D9]">
+    <div className=" w-[925px] h-[620px] bg-white shadow-lg p-6 rounded-[12px] border border-[#D1E5D9]">
       {/* Header */}
       <div className="flex items-center gap-2 mb-4">
         <svg width="24" height="24" viewBox="0 0 17 11" fill="none" xmlns="http://www.w3.org/2000/svg">
