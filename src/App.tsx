@@ -14,7 +14,7 @@ import DoctorAppointmentsPage from './pages/AdminPage/Appointments/DoctorAppoint
 import DoctorDashboard from './pages/DoctorDashboard';
 import DoctorTopbar from './components/DoctorTopbar'; // Import DoctorTopbar
 import TodaysAppointment from './components/TodaysAppointments';
-import PatientData from './components/PatientsData';
+import PatientData from './pages/DoctorPage/Patients/PatientsData';
 function AppLayout() {
   const location = useLocation();
   const navigate = useNavigate();
@@ -57,8 +57,8 @@ function AppLayout() {
         <Route path="/appointments/:doctorName" element={<DoctorAppointmentsRoute />} />
         <Route path="/chatWidget" element={<ChatWidgetLauncher />} />
         <Route path="/doctor-dashboard" element={<DoctorDashboard />} />
-        <Route path="todaysAppointments" element={<TodaysAppointment/>}/>
-        <Route path="patientData" element={<PatientData/>}/>
+        <Route path="/todaysAppointments" element={<TodaysAppointment/>}/>
+        <Route path="/patientData" element={<PatientData/>}/>
       </Routes>
     </div>
   );

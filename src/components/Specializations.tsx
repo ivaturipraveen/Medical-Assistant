@@ -77,7 +77,8 @@ const Specializations = () => {
             className="text-emerald-800 border border-emerald-800 w-[82px] h-[40px] pt-[9px] pr-[16px] pb-[12px] pl-[16px] rounded-[4px] text-sm hover:bg-emerald-50 transition mt-[-4px]"
             onClick={() => setShowModal(true)}
           >
-            View all
+            View&nbsp;all
+
           </button>
         </div>
 

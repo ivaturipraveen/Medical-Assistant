@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import axios from 'axios';
 import { useLocation } from 'react-router-dom';
-import dual from '../assets/dual.svg';
+import dual from '../../../assets/dual.svg';
 interface Patient {
   id: number;
   full_name: string;
@@ -157,7 +157,13 @@ const PatientsPage: React.FC = () => {
   {patient.phone_number ? patient.phone_number : "Not provided"}
 </td>
 
-                  <td className="py-2 px-4">{patient.status}</td>
+                  {/*<td className="py-2 px-4">{patient.status}</td>*/}
+                  <td className="py-2 px-4">
+                    <span className="text-[#098289] bg-[#0982891A] border border-[#098289] rounded-[16px] min-w-[84px] max-w-[480px] h-[28px] px-[10px] flex items-center justify-center text-sm">
+                      {patient.status}
+                    </span>
+                  </td>
+
                   <td className="py-2 px-4">
                     {recentAppointments[patient.id]
                       ? new Date(recentAppointments[patient.id]?.appointment_time || '').toLocaleString()
@@ -165,7 +171,15 @@ const PatientsPage: React.FC = () => {
                   </td>
                   <td className="py-2 px-4">3</td>
                   <td className="py-2 px-4">
-                    <button className="text-blue-500 hover:text-blue-700">View Profile</button>
+                  <button className="bg-[#098289] text-white text-sm font-medium rounded-[16px] pt-[8px] pl-[10px] pr-[10px] pb-[8px]  min-w-[84px] max-w-[480px] h-[28px] transition-all duration-300 ease-out"
+                     onClick={() => {
+                    // You can expand this to open a modal or sidebar in future
+                   console.log(`Open Patient Profile Overlay for ID ${patient.id}`);
+                   }}
+                  >
+                   View Profile
+                  </button>
+
                   </td>
                 </tr>
               ))

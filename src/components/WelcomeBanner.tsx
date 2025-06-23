@@ -1,25 +1,40 @@
 import { useEffect, useState } from "react";
 
-// WelcomeBanner Component
 const WelcomeBanner = () => {
   const [previousLogin, setPreviousLogin] = useState<string>("");
+  const [welcomeName, setWelcomeName] = useState<string>("");
 
   useEffect(() => {
-    // Retrieve the previous login timestamp from localStorage
+    // Retrieve the previous login timestamp
     const storedPreviousLogin = localStorage.getItem("previousLogin");
+    setPreviousLogin(storedPreviousLogin || "Not available");
 
-    // If there's no previous login in localStorage, set a default message
-    if (storedPreviousLogin) {
-      setPreviousLogin(storedPreviousLogin);
+    // Determine the role and display name
+    const role = localStorage.getItem("userRole");
+    const email = localStorage.getItem("userEmail"); // Assuming email is stored at login
+
+    if (role === "admin") {
+      setWelcomeName("Admin");
+    } else if (role === "doctor" && email) {
+      const namePart = email.split("@")[0];
+      setWelcomeName(capitalizeName(namePart));
     } else {
-      setPreviousLogin("Not available"); // or set any default message you prefer
+      setWelcomeName("User");
     }
   }, []);
+
+  const capitalizeName = (name: string) => {
+    return name
+      .split(".")
+      .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+      .join(" ");
+  };
 
   return (
     <div className="mt-1 flex items-center font-geist justify-between bg-white rounded-[10px] px-4 py-[6px] w-full h-[52px]">
       <span className="text-lg font-regular text-gray-800">
-        Welcome Back! <span className="text-black-600 font-bold">Admin</span>
+        Welcome Back!{" "}
+        <span className="text-black-600 font-bold">{welcomeName}</span>
       </span>
       <div className="text-sm font-sf text-gray-700">
         <div>Last logged-in: {previousLogin}</div>

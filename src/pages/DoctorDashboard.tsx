@@ -26,14 +26,33 @@ const DoctorDashboard: React.FC = () => {
         <div className="w-full mb-4">
             <Feedback/>
         </div>
-        <div className="mt-5 flex gap-[15px]">
-                <AppointmentTrendsContainer />
-                <PatientsOverview />
-                <AppointmentsCard/>
-        </div>
-        <div className="w-full flex space-x-4 mt-5">
-                    <TodaysAppointment />
-        </div>
+       <div className="mt-5 flex gap-[15px] items-start">
+  {/* Left Column */}
+  <div className="flex flex-col gap-4 w-[930px]">
+    
+    {/* Top Row: Charts side-by-side */}
+    <div className="flex gap-[15px]">
+      <div className="flex-1">
+        <AppointmentTrendsContainer />
+      </div>
+      <div className="flex-1">
+        <PatientsOverview />
+      </div>
+    </div>
+
+    {/* Bottom: Today's Appointments full width */}
+    <div>
+      <TodaysAppointment />
+    </div>
+  </div>
+
+  {/* Right Column */}
+  <div className="flex-1">
+    <AppointmentsCard />
+  </div>
+</div>
+
+
     
 
         

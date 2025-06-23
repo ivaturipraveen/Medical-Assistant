@@ -1,10 +1,12 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import profileImg from '../assets/profile.svg'; // Correct path to profile image
 import notifyIcon from '../assets/notify.svg'; // Correct path to notification icon
 import headlineIcon from '../assets/Headline.svg'; // Correct path to logo
 import { Home, CalendarDays, Users, MessageCircle, ChevronDown, Search } from 'lucide-react'; // Import necessary icons
 
 const DoctorTopbar = () => {
+   const navigate = useNavigate(); 
   const [isDropdownVisible, setIsDropdownVisible] = useState(false);
 
   const toggleDropdown = () => setIsDropdownVisible(!isDropdownVisible);
@@ -21,15 +23,20 @@ const DoctorTopbar = () => {
           />
           <div className="flex items-center gap-2 text-sm">
             {/* Static Components without any onClick */}
-            <button className="flex items-center gap-1 px-4 py-2 rounded-full text-gray-700">
+            <button  onClick={()=>navigate('/doctor-dashboard')}  className="flex items-center gap-1 px-4 py-2 rounded-full text-gray-700">
               <Home className="w-4 h-4" /><span>Dashboard</span>
             </button>
             <button className="flex items-center gap-1 px-4 py-2 rounded-full text-gray-700">
               <CalendarDays className="w-4 h-4" /><span>Appointments</span>
             </button>
-            <button className="flex items-center gap-1 px-4 py-2 rounded-full text-gray-700">
+            <button    onClick={() => navigate('/patientData')}
+            className="flex items-center gap-1 px-4 py-2 rounded-full text-gray-700">
               <Users className="w-4 h-4" /><span>Patients</span>
             </button>
+
+    
+
+
             <button className="flex items-center gap-1 px-4 py-2 rounded-full text-gray-700">
               <MessageCircle className="w-4 h-4" /><span>Messages</span>
             </button>
