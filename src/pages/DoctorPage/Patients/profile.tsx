@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { FaArrowLeft, FaCalendarAlt } from 'react-icons/fa';
 import axios from 'axios';
-import toast from 'react-hot-toast';
+// import toast from 'react-hot-toast';
 import patientImage from '../../../assets/patientimage.svg';
 
 interface Patient {
@@ -33,7 +33,7 @@ const PatientProfilePanel: React.FC<{
 }> = ({ patient, onClose }) => {
   const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [patientDetails, setPatientDetails] = useState<Patient>(patient);
-  const panelRef = useRef<HTMLDivElement>(null);
+  const modalRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     axios
@@ -53,16 +53,16 @@ const PatientProfilePanel: React.FC<{
       });
   }, [patient.id]);
 
-  useEffect(() => {
-    const handleClickOutside = (e: MouseEvent) => {
-      if (panelRef.current && !panelRef.current.contains(e.target as Node)) {
-        toast.success('Closed profile');
+   useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (modalRef.current && !modalRef.current.contains(event.target as Node)) {
         onClose();
       }
     };
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [onClose]);
+
 
   const past = appointments.filter(a => new Date(a.appointment_time) < new Date());
   const upcoming = appointments.filter(a => new Date(a.appointment_time) >= new Date());
@@ -72,14 +72,12 @@ const PatientProfilePanel: React.FC<{
   return (
     <div className="fixed inset-0 z-50 flex items-start justify-end bg-black/50">
       <div
-        ref={panelRef}
+        ref={modalRef}
         className="bg-white w-[450px] h-[100vh] overflow-y-scroll px-[24px] shadow-xl transition-transform duration-300 ease-out rounded-l-xl"
       >
         {/* Header */}
         <div className="w-[402px] h-[47px] flex justify-between items-center pt-[16px] pb-[8px] sticky top-0 bg-white z-10">
-          <button onClick={() => { toast.success('Closed profile'); onClose(); }} className="text-gray-600 hover:text-black focus:outline-none">
-            <FaArrowLeft className="text-xl" />
-          </button>
+            <FaArrowLeft className="cursor-pointer text-gray-600" onClick={onClose}/>
           <h2 className="text-lg font-semibold text-center flex-1 -ml-4">Patient Profile</h2>
         </div>
 

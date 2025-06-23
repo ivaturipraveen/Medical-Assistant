@@ -21,7 +21,7 @@ function formatTime(time24: string): string {
   let hour = parseInt(hourStr, 10);
   const minute = minuteStr.padStart(2, '0');
   hour = hour % 12 || 12;
-  const ampm = parseInt(hourStr, 10) >= 12 ? 'PM' : 'AM';
+  const ampm = parseInt(hourStr, 10) >= 12 ? '' : '';
   return `${hour}:${minute} ${ampm}`;
 }
 

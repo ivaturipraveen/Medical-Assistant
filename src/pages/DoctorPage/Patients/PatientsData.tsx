@@ -2,7 +2,6 @@
 import React, { useEffect, useState, useMemo } from 'react';
 import axios from 'axios';
 import { useLocation } from 'react-router-dom';
-import { ChevronDown } from 'lucide-react';
 import dual from '../../../assets/dual_green.svg';
 import PatientProfilePanel from './profile';
 
@@ -27,8 +26,6 @@ interface Appointment {
 const PatientsPage: React.FC = () => {
   const [patients, setPatients] = useState<Patient[]>([]);
   const [appointments, setAppointments] = useState<Appointment[]>([]);
-  // const [departments, setDepartments] = useState<string[]>([]);
-  // const [selectedDepartment, setSelectedDepartment] = useState<string>('');
   const [sortOption, setSortOption] = useState<string>('All Patients');
   const [selectedPatient, setSelectedPatient] = useState<Patient | null>(null);
 
@@ -38,13 +35,11 @@ const PatientsPage: React.FC = () => {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const [patientsRes,  appointmentsRes] = await Promise.all([
+        const [patientsRes, appointmentsRes] = await Promise.all([
           axios.get('https://medical-assistant1.onrender.com/patients'),
-          axios.get('https://medical-assistant1.onrender.com/categories'),
           axios.get('https://medical-assistant1.onrender.com/appointments'),
         ]);
         setPatients(patientsRes.data.patients);
-        // setDepartments(categoriesRes.data.categories.filter((dept: string) => dept.toLowerCase() !== 'temp'));
         setAppointments(appointmentsRes.data.appointments);
       } catch (error) {
         console.error('Error fetching data:', error);
@@ -76,13 +71,7 @@ const PatientsPage: React.FC = () => {
         patient.full_name.toLowerCase().includes(searchQuery.toLowerCase())
       );
     }
-    // if (selectedDepartment) {
-    //   results = results.filter(
-    //     (patient) =>
-    //       patient.department &&
-    //       patient.department.trim().toLowerCase() === selectedDepartment.trim().toLowerCase()
-    //   );
-    // }
+   
     if (sortOption === 'A to Z') {
       results.sort((a, b) => a.full_name.localeCompare(b.full_name));
     } else if (sortOption === 'Z to A') {
@@ -106,26 +95,18 @@ const PatientsPage: React.FC = () => {
           <img src={dual} alt="dual icon" />
           <h2 className="text-2xl text-black font-bold font-sf">Patients - {patients.length}</h2>
         </div>
-        
-<div className="flex gap-4">
-  <div className="relative w-[81px] h-[40px]">
-    <select
-      value={sortOption}
-      onChange={(e) => setSortOption(e.target.value)}
-      className="appearance-none w-full h-full px-3 border border-[#098289] rounded-[4px] text-sm focus:outline-none text-left"
-    >
-      <option>Filters</option>
-      <option value="A to Z">A to Z</option>
-      <option value="Z to A">Z to A</option>
-      <option value="Old Patients">Old Patients</option>
-    </select>
-    <ChevronDown
-      className="absolute right-2 top-1/2 transform -translate-y-1/2 text-[#098289]"
-      width={20}
-      height={20}
-    />
-  </div>
-</div>
+        <div className="flex gap-4">
+          <select
+            value={sortOption}
+            onChange={(e) => setSortOption(e.target.value)}
+className="p-1 border border-[#098289] rounded-[4px] text-sm focus:outline-none w-[81px] h-[40px] text-left"
+          >
+            <option>Filters</option>
+            <option value="A to Z">A to Z</option>
+            <option value="Z to A">Z to A</option>
+            <option value="Old Patients">Old Patients</option>
+          </select>
+        </div>
       </div>
 
       <div className="w-[1400px] h-[1224px] border border-[#D1E5D9] bg-white rounded-[12px] overflow-hidden">
