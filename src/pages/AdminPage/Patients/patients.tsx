@@ -80,13 +80,13 @@ const PatientsPage: React.FC = () => {
   onChange={(e) => setSelectedDepartment(e.target.value)}
   className={`w-[129px] h-[40px] rounded-[4px] px-2 py-[8px] text-sm
     ${searchQuery 
-      ? 'bg-gray-100 text-gray-400 cursor-not-allowed border-gray-300' 
+      ? 'bg-white text-gray-400 cursor-not-allowed border-gray-300' 
       : 'border-[2px] border-[#098289] text-gray-700'}
   `}
 >
 
 
-          <option value="">All Departments</option>
+          <option value="">Specialization</option>
           {departments
             .filter((dept) => dept.toLowerCase() !== 'temp')
             .map((dept) => (

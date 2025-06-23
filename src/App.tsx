@@ -1,6 +1,6 @@
 import './App.css';
 import { useParams } from 'react-router-dom';
-
+import { Toaster } from 'react-hot-toast';
 import { BrowserRouter as Router, Routes, Route, useLocation, useNavigate } from 'react-router-dom';
 import Dashboard from './pages/Dashboard';
 import MedicalLoginDashboard from './components/loginrightsidebar';
@@ -15,7 +15,7 @@ import DoctorDashboard from './pages/DoctorDashboard';
 import DoctorTopbar from './components/DoctorTopbar'; // Import DoctorTopbar
 import TodaysAppointment from './components/TodaysAppointments';
 import PatientData from './pages/DoctorPage/Patients/PatientsData';
-import PatientSettings from './pages/DoctorPage/Settings/settings';
+import DoctorSettings from './pages/DoctorPage/Settings/settings';
 function AppLayout() {
   const location = useLocation();
   const navigate = useNavigate();
@@ -47,7 +47,7 @@ function AppLayout() {
   return (
     <div className="w-screen h-screen bg-[#F4F8FB] overflow-x-hidden">
       {!hideTopbar && renderTopbar()}
-
+       <Toaster position='top-right'/>
       <Routes>
         <Route path="/" element={<MedicalLoginDashboard />} />
         <Route path="/dashboard" element={<Dashboard />} />
@@ -60,7 +60,8 @@ function AppLayout() {
         <Route path="/doctor-dashboard" element={<DoctorDashboard />} />
         <Route path="/todaysAppointments" element={<TodaysAppointment/>}/>
         <Route path="/patientData" element={<PatientData/>}/>
-        <Route path="/patientSettings" element={<PatientSettings/>}/>
+        <Route path="/DoctorSettings" element={<DoctorSettings/>}/>
+
       </Routes>
     </div>
   );

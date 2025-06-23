@@ -1,21 +1,36 @@
 import React from 'react';
+import smile from '../assets/smile.svg';
+import rating from '../assets/rating.svg';
+import patientIcon from '../assets/patientIcon.svg';
 
 const Feedback: React.FC = () => {
   return (
-    <div className="flex gap-2 p-4 bg-white shadow-sm w-full max-w-[1400px]">
+    <div className="flex gap-[20px]">
       {/* Card 1 */}
-      <div className="flex items-center justify-between w-[456px] h-[48px] min-w-[158px] gap-2 px-4 py-2 rounded-[10px] bg-gray-100">
-        <span className="font-medium">Card 1</span>
+      <div className="flex items-center justify-between w-[456px] h-[48px] min-w-[158px] gap-2 px-4 py-2 rounded-[10px] bg-white">
+        <div className="flex items-center gap-2">
+          <img src={smile} alt="Smile Icon" className="w-8 h-8" />
+          <span className="text-sf font-medium">Patient Satisfaction</span>
+        </div>
+        <span className="text-sf font-semibold">88% (3100 Patients)</span>
       </div>
 
       {/* Card 2 */}
-      <div className="flex items-center justify-between w-[456px] h-[48px] min-w-[158px] gap-2 px-4 py-2 rounded-[10px] bg-gray-100">
-        <span className="font-medium">Card 2</span>
+      <div className="flex items-center justify-between w-[456px] h-[48px] min-w-[158px] gap-2 px-4 py-2 rounded-[10px] bg-white">
+        <div className="flex items-center gap-2">
+          <img src={rating} alt="Rating Icon" className="w-8 h-8" />
+          <span className="text-sf font-medium">Rating & Reviews</span>
+        </div>
+        <span className="text-sf font-semibold text-orange-500">4.8 / 2500</span>
       </div>
 
       {/* Card 3 */}
-      <div className="flex items-center justify-between w-[456px] h-[48px] min-w-[158px] gap-2 px-4 py-2 rounded-[10px] bg-gray-100">
-        <span className="font-medium">Card 3</span>
+      <div className="flex items-center justify-between w-[456px] h-[48px] min-w-[158px] gap-2 px-4 py-2 rounded-[10px] bg-white">
+        <div className="flex items-center gap-2">
+          <img src={patientIcon} alt="Patients Icon" className="w-8 h-8" />
+          <span className="text-sm font-medium">New Patients</span>
+        </div>
+        <span className="text-sm font-semibold">32</span>
       </div>
     </div>
   );

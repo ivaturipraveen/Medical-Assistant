@@ -1,16 +1,26 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import profileImg from '../assets/profile.svg'; // Correct path to profile image
-import notifyIcon from '../assets/notify.svg'; // Correct path to notification icon
-import headlineIcon from '../assets/Headline.svg'; // Correct path to logo
-import { Home, CalendarDays, Users, MessageCircle, ChevronDown, Search } from 'lucide-react'; // Import necessary icons
+import profileImg from '../assets/profile.svg';
+import notifyIcon from '../assets/notify.svg';
+import headlineIcon from '../assets/Headline.svg';
+import { Home, CalendarDays, Users, ChevronDown, Search, Settings } from 'lucide-react';
 
 
 const DoctorTopbar = () => {
-   const navigate = useNavigate(); 
+  const navigate = useNavigate();
   const [isDropdownVisible, setIsDropdownVisible] = useState(false);
 
   const toggleDropdown = () => setIsDropdownVisible(!isDropdownVisible);
+  const isActive = (path: string) => location.pathname === path;
+
+
+  const handleLogout = () => {
+    // ✅ Clear session/localStorage
+    localStorage.clear(); // or selectively clear: localStorage.removeItem('userRole'), etc.
+
+    // ✅ Redirect to login
+    navigate('/');
+  };
 
   return (
     <header className="w-full h-[64px] bg-white fixed shadow-sm flex z-50 justify-center">
@@ -23,23 +33,52 @@ const DoctorTopbar = () => {
             className="w-[189px] h-[24px] cursor-pointer"
           />
           <div className="flex items-center gap-2 text-sm">
-            {/* Static Components without any onClick */}
-            <button  onClick={()=>navigate('/doctor-dashboard')}  className="flex items-center gap-1 px-4 py-2 rounded-full text-gray-700">
-              <Home className="w-4 h-4" /><span>Dashboard</span>
+            <button
+              onClick={() => navigate('/doctor-dashboard')}
+              className={`flex items-center gap-[6px] w-[103px] h-[40px] px-[12px] py-[8px] rounded-full text-sm transition-all ${
+                isActive('/doctor-dashboard')
+                  ? 'bg-[#DAECED]'
+                  : 'bg-white hover:bg-[#b8dede]'
+              }`}
+            >
+              <Home className="w-4 h-4" />
+              <span>Dashboard</span>
             </button>
-            <button className="flex items-center gap-1 px-4 py-2 rounded-full text-gray-700">
-              <CalendarDays className="w-4 h-4" /><span>Appointments</span>
+            <button
+              onClick={() => navigate('/appointments')}
+              className={`flex items-center gap-[6px] w-[130px] h-[40px] px-[12px] py-[8px] rounded-full text-sm transition-all ${
+                isActive('/appointments')
+                  ? 'bg-[#DAECED]'
+                  : 'bg-white hover:bg-[#b8dede]'
+              }`}
+            >
+              <CalendarDays className="w-4 h-4" />
+              <span>Appointments</span>
             </button>
-            <button    onClick={() => navigate('/patientData')}
-            className="flex items-center gap-1 px-4 py-2 rounded-full text-gray-700">
-              <Users className="w-4 h-4" /><span>Patients</span>
+             <button
+              onClick={() => navigate('/patientData')}
+              className={`flex items-center gap-[6px] w-[103px] h-[40px] px-[12px] py-[8px] rounded-full text-sm transition-all ${
+                isActive('/patientData')
+                ? 'bg-[#DAECED]'
+                  : 'bg-white hover:bg-[#b8dede]'
+              }`}
+            >
+              <Users className="w-4 h-4" />
+              <span>Patients</span>
             </button>
 
-    
-            <button   onClick={()=>navigate('/patientSettings')}  
-            className="flex items-center gap-1 px-4 py-2 rounded-full text-gray-700">
-              <MessageCircle className="w-4 h-4" /><span>Settings</span>
+            <button
+              onClick={() => navigate('/DoctorSettings')}
+              className={`flex items-center gap-[6px] w-[103px] h-[40px] px-[12px] py-[8px] rounded-full text-sm transition-all ${
+                isActive('/DoctorSettings')
+                 ? 'bg-[#DAECED]'
+                  : 'bg-white hover:bg-[#b8dede]'
+              }`}
+            >
+              <Settings className="w-4 h-4" />
+              <span>Settings</span>
             </button>
+
           </div>
         </div>
 
@@ -66,7 +105,7 @@ const DoctorTopbar = () => {
             </div>
             {isDropdownVisible && (
               <div className="absolute top-[40px] right-0 w-32 bg-white border border-gray-300 rounded-md shadow-md z-10">
-                <div onClick={toggleDropdown} className="px-4 py-2 text-sm cursor-pointer hover:bg-gray-100">
+                <div onClick={handleLogout} className="px-4 py-2 text-sm cursor-pointer hover:bg-gray-100">
                   Logout
                 </div>
               </div>

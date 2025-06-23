@@ -42,12 +42,7 @@ const LoginForm = () => {
       if (previousLoginTime) {
         localStorage.setItem("previousLogin", previousLoginTime);
       }
-  
-      // Store the current login time as `lastLogin`
       localStorage.setItem('lastLogin', currentLoginTime);
-  
-
-
       if (activeTab === 'admin') {
         localStorage.setItem('userRole', 'admin');
         localStorage.setItem('adminData', JSON.stringify(data.admin));
@@ -55,6 +50,8 @@ const LoginForm = () => {
       } else if (activeTab === 'doctor') {
         localStorage.setItem('userRole', 'doctor');
         localStorage.setItem('doctorData', JSON.stringify(data.doctor));
+        if (data.doctor.name) localStorage.setItem('userName', data.doctor.name);
+        if (data.doctor.email) localStorage.setItem('userEmail', data.doctor.email);
         navigate('/doctor-dashboard', {
           state: {
             doctor: data.doctor,
