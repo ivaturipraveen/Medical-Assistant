@@ -77,7 +77,7 @@ const PatientProfilePanel: React.FC<{
       >
         {/* Header */}
         <div className="w-[402px] h-[47px] flex justify-between items-center pt-[16px] pb-[8px] sticky top-0 bg-white z-10">
-            <FaArrowLeft className="cursor-pointer text-gray-600" onClick={onClose}/>
+            {/* <FaArrowLeft className="cursor-pointer text-gray-600" onClick={onClose}/> */}
           <h2 className="text-lg font-semibold text-center flex-1 -ml-4">Patient Profile</h2>
         </div>
         
