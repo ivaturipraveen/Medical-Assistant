@@ -12,7 +12,7 @@ import {
   Stethoscope,
   CalendarDaysIcon,
 } from 'lucide-react';
-import homeicon from '../assets/HomeIcon.svg';
+import homeicon from '../assets/Homeicon.svg';
 
 interface Suggestion {
   name: string;
