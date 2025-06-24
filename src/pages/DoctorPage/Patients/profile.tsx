@@ -1,8 +1,8 @@
 import React, { useEffect, useState, useRef } from 'react';
-import { FaArrowLeft, FaCalendarAlt } from 'react-icons/fa';
+import { FaCalendarAlt, FaTimes } from 'react-icons/fa';
 import axios from 'axios';
-// import toast from 'react-hot-toast';
 import patientImage from '../../../assets/patientimage.svg';
+import leftarrow from '../../../assets/LeftArrow.svg';  // Import left arrow icon
 
 interface Patient {
   id: number;
@@ -33,8 +33,11 @@ const PatientProfilePanel: React.FC<{
 }> = ({ patient, onClose }) => {
   const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [patientDetails, setPatientDetails] = useState<Patient>(patient);
-  const modalRef = useRef<HTMLDivElement>(null);
+  const [showPrescription, setShowPrescription] = useState(false); // To control visibility of prescription modal
+  const sidebarRef = useRef<HTMLDivElement>(null); // Reference for the sidebar
+  const prescriptionRef = useRef<HTMLDivElement>(null); // Reference for prescription modal
 
+  // Fetch data on component mount and whenever patient changes
   useEffect(() => {
     axios
       .get('https://medical-assistant1.onrender.com/appointments')
@@ -53,34 +56,43 @@ const PatientProfilePanel: React.FC<{
       });
   }, [patient.id]);
 
-   useEffect(() => {
+  // Close the modal or sidebar when clicking outside
+  useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (modalRef.current && !modalRef.current.contains(event.target as Node)) {
-        onClose();
+      if (!showPrescription && sidebarRef.current && !sidebarRef.current.contains(event.target as Node)) {
+        onClose(); // Close sidebar only if prescription modal is not active
+      }
+      if (showPrescription && prescriptionRef.current && !prescriptionRef.current.contains(event.target as Node)) {
+        setShowPrescription(false); // Close prescription modal only when clicking outside
       }
     };
     document.addEventListener('mousedown', handleClickOutside);
+
     return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, [onClose]);
+  }, [onClose, showPrescription]);
 
+  const past = appointments.filter((a) => new Date(a.appointment_time) < new Date());
+  const upcoming = appointments.filter((a) => new Date(a.appointment_time) >= new Date());
 
-  const past = appointments.filter(a => new Date(a.appointment_time) < new Date());
-  const upcoming = appointments.filter(a => new Date(a.appointment_time) >= new Date());
-
-  const avatarUrl =  patientImage;
+  const avatarUrl = patientImage;
 
   return (
     <div className="fixed inset-0 z-50 flex items-start justify-end bg-black/50">
       <div
-        ref={modalRef}
+        ref={sidebarRef}
         className="bg-white w-[450px] h-[100vh] overflow-y-scroll px-[24px] shadow-xl transition-transform duration-300 ease-out rounded-l-xl"
       >
         {/* Header */}
-        <div className="w-[402px] h-[47px] flex justify-between items-center pt-[16px] pb-[8px] sticky top-0 bg-white z-10">
-            <FaArrowLeft className="cursor-pointer text-gray-600" onClick={onClose}/>
-          <h2 className="text-lg font-semibold text-center flex-1 -ml-4">Patient Profile</h2>
+        <div className="w-[402px] h-[47px] flex justify-between items-center pt-[16px] pb-[8px] top-0 bg-white">
+          {/* Left Arrow Button */}
+          <img
+            src={leftarrow}
+            alt="Close Sidebar"
+            onClick={onClose} // Close sidebar on click
+            className="cursor-pointer"
+          />
+          <h2 className="text-lg font-semibold text-center flex-1 ml-4">Patient Profile</h2>
         </div>
-        
         {/* Profile Info */}
         <div className="flex flex-col items-center mt-2 w-[402px] min-h-[269px] pt-[16px] pb-[16px] border-b border-gray-200">
           <img src={avatarUrl} alt="avatar" className="w-[128px] h-[128px] min-h-[128px] rounded-full" />
@@ -94,10 +106,21 @@ const PatientProfilePanel: React.FC<{
         {/* Personal Details */}
         <div className="w-[402px] min-h-[172px] pt-[16px] pb-[16px]">
           <h4 className="font-semibold text-[#098289] mb-2">Personal Details</h4>
-          <p className="text-sm"><strong>Contact:</strong> {patientDetails.phone_number}</p>
-          <p className="text-sm"><strong>Email:</strong> {patientDetails.email ?? 'emma.davis@email.com'}</p>
-          <p className="text-sm"><strong>Age:</strong> {patientDetails.dob ? `${new Date().getFullYear() - new Date(patientDetails.dob).getFullYear()} yrs (${patientDetails.dob})` : 'N/A'}</p>
-          <p className="text-sm"><strong>Gender:</strong> {patientDetails.gender ?? 'Female'}</p>
+          <p className="text-sm">
+            <strong>Contact:</strong> {patientDetails.phone_number}
+          </p>
+          <p className="text-sm">
+            <strong>Email:</strong> {patientDetails.email ?? 'emma.davis@email.com'}
+          </p>
+          <p className="text-sm">
+            <strong>Age:</strong>{' '}
+            {patientDetails.dob
+              ? `${new Date().getFullYear() - new Date(patientDetails.dob).getFullYear()} yrs (${patientDetails.dob})`
+              : 'N/A'}
+          </p>
+          <p className="text-sm">
+            <strong>Gender:</strong> {patientDetails.gender ?? 'Female'}
+          </p>
         </div>
 
         {/* Medical History */}
@@ -120,7 +143,12 @@ const PatientProfilePanel: React.FC<{
                   <p className="text-xs text-gray-500">{new Date(a.appointment_time).toLocaleTimeString()}</p>
                 </div>
               </div>
-              <button className="text-[#098289] border border-[#098289] px-3 py-1 rounded-full text-xs">View Prescription</button>
+              <button
+                onClick={() => setShowPrescription(true)} // Show prescription on click
+                className="text-[#098289] border border-[#098289] px-3 py-1 rounded-full text-xs"
+              >
+                View Prescription
+              </button>
             </div>
           ))}
         </div>
@@ -142,6 +170,26 @@ const PatientProfilePanel: React.FC<{
           ))}
         </div>
       </div>
+
+      {/* Prescription Modal */}
+      {showPrescription && (
+        <div className="absolute inset-0  flex justify-center items-center bg-black/50">
+          <div className="bg-white w-[400px] p-4 rounded-lg shadow-lg" ref={prescriptionRef}>
+            <h4 className="font-semibold text-[#098289] mb-2">Recommended Medicines</h4>
+            <ul className="text-sm">
+              {/* Static data for recommended medicines */}
+              <li>Lisinopril - 10 mg, once a day</li>
+              <li>Metformin - 500 mg, twice a day</li>
+              <li>Aspirin - 81 mg, once a day</li>
+            </ul>
+            {/* Close button on top-right corner */}
+            <FaTimes
+              className="absolute top-2 right-2 cursor-pointer text-[#098289]"
+              onClick={() => setShowPrescription(false)} // Close the modal when clicking the icon
+            />
+          </div>
+        </div>
+      )}
     </div>
   );
 };

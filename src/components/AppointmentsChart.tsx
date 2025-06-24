@@ -25,27 +25,13 @@ const latest = [...data].reverse().find(d => d.scheduled !== null);
 
 const AppointmentTrendsContainer = () => {
   return (
-    // Removed the explicit `w-[457px]` from this div.
-    // It will now take `w-full` from its parent in dashboard.tsx (which allocates 457px to it).
-    // The `p-6` will apply padding internally, respecting the `w-full` boundary.
-    <div className="max-w-[457px] p-6 bg-white rounded-[10px] h-[345px]">
+    <div className="w-[457px] p-6 bg-white rounded-[10px] h-[367px]">
       {/* Header */}
-      <div className="flex justify-between items-center mb-4">
-        <h2 className="text-sm font-semibold text-gray-900">Appointment Trends</h2>
-        <div className="flex gap-2">
-          <select className="border rounded px-3 py-1 text-xs text-gray-700 h-[32px]">
-            <option>Month</option>
-            {/* Options can be dynamically generated if needed */}
-          </select>
-          <select className="border rounded px-3 py-1 text-xs text-gray-700 h-[32px]">
-            <option>Week</option>
-            {/* Options can be dynamically generated if needed */}
-          </select>
-        </div>
+      <div className="flex items-center justify-center mb-4">
+        <h2 className="text-lg font-semibold text-gray-900">Appointment Trends</h2>
       </div>
-
       {/* Chart */}
-      <div className="pt-4"style={{ height: '227px', width: '100%' }}>
+      <div className="pt-4" style={{ height: '227px', width: '100%' }}>
         <ResponsiveContainer width="100%" height="100%">
           <LineChart data={data}>
             <CartesianGrid strokeDasharray="3 3" vertical={false} />
@@ -53,6 +39,7 @@ const AppointmentTrendsContainer = () => {
               dataKey="day"
               stroke="#CBD5E1"
               tick={{ fontSize: 11, fill: '#64748B' }}
+              style={{ marginBottom: '20px' }}  // Add margin bottom to create space
             />
             <YAxis
               stroke="#CBD5E1"
@@ -67,12 +54,13 @@ const AppointmentTrendsContainer = () => {
                   fill: '#64748B',
                 },
               }}
+              style={{ marginBottom: '20px' }}  // Add margin bottom to create space
             />
             <Tooltip />
             <Legend
               verticalAlign="bottom"
               iconType="circle"
-              wrapperStyle={{ fontSize: '12px', marginTop: 8 }}
+              wrapperStyle={{ fontSize: '12px', marginTop: 16 }}
             />
             <ReferenceLine
               y={400}
@@ -103,6 +91,7 @@ const AppointmentTrendsContainer = () => {
               strokeWidth={2}
               dot={false}
               name="Scheduled"
+              style={{ marginBottom: '5px' }}  // Adds gap between the lines
             />
             <Line
               type="linear"
@@ -111,6 +100,7 @@ const AppointmentTrendsContainer = () => {
               strokeWidth={2}
               dot={false}
               name="Completed"
+              style={{ marginBottom: '5px' }}  // Adds gap between the lines
             />
           </LineChart>
         </ResponsiveContainer>

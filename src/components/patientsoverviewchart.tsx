@@ -46,24 +46,10 @@ const PatientsOverview = () => {
   };
 
   return (
-    <div className=" max-w-[457px] h-[345px] bg-white rounded-[10px]  p-4 sm:p-6">
-      <div className="flex flex-col sm:flex-row sm:justify-between items-start sm:items-center mb-4 w-full h-[40px]">
-        <h2 className="text-lg font-semibold text-gray-900">Patients Overview</h2>
-        <div className="flex gap-2 mt-2 sm:mt-0">
-          <select className="border border-teal-600 text-sm px-3 py-1 rounded-md text-teal-700">
-            <option>Month</option>
-            {["Jan", "Feb", "Mar", "Apr", "May", "June", "July", "Aug", "Sep", "Oct", "Nov", "Dec"].map((month) => (
-              <option key={month}>{month}</option>
-            ))}
-          </select>
-          <select className="border border-teal-600 text-sm px-3 py-1 rounded-md text-teal-700">
-            <option>Date</option>
-            {Array.from({ length: 31 }, (_, i) => (
-              <option key={i + 1}>{i + 1}</option>
-            ))}
-          </select>
-        </div>
-      </div>
+    <div className="w-[457px] h-[367px] bg-white rounded-[10px]  p-4 sm:p-6">
+     <div className="flex flex-col sm:flex-row sm:justify-center items-center mb-4 w-full h-[40px]">
+  <h2 className="text-lg font-semibold text-gray-900">Patients Overview</h2>
+</div>
 
       <div
         className="flex flex-col md:flex-row md:items-center md:justify-between w-full"
@@ -75,7 +61,7 @@ const PatientsOverview = () => {
       >
         {/* Pie Chart */}
         <div className="flex justify-center">
-          <PieChart width={200} height={225.24}>
+          <PieChart width={200} height={210.24}>
             <Pie
               data={chartData}
               cx="50%"

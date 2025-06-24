@@ -1,6 +1,6 @@
-import React, { useEffect, useRef,useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { useParams } from 'react-router-dom';
-import { FaStar, FaCalendarAlt, FaArrowLeft } from 'react-icons/fa';
+import { FaStar, FaCalendarAlt, } from 'react-icons/fa';
 import DocProfile from '../../../assets/DocProfile.svg';
 import dual from '../../../assets/dual.svg';
 import DoctorAppointmentsPage from './DoctorAppointmentsPage';
@@ -36,7 +36,7 @@ const DepartmentAppointments: React.FC = () => {
   const fromSearch = location.state?.fromSearch || false;
   const searchedDoctorName = location.state?.doctorName || null;
   const autoClickRef = useRef<{ [doctorName: string]: HTMLButtonElement | null }>({});
-
+  const sidebarRef = useRef<HTMLDivElement>(null); // Reference for sidebar
 
   useEffect(() => {
     if (fromSearch && searchedDoctorName && doctors.length > 0) {
@@ -107,6 +107,19 @@ const DepartmentAppointments: React.FC = () => {
     setSelectedDoctorName(null);
   };
 
+  // Close sidebar when clicking outside of it
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (sidebarRef.current && !sidebarRef.current.contains(event.target as Node)) {
+        closeSidebar();
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
   return (
     <div className="w-full h-screen pt-20">
       <div className="w-[1400px] max-w-[1400px] h-screen mx-auto bg-white p-6 rounded-2xl">
@@ -148,15 +161,15 @@ const DepartmentAppointments: React.FC = () => {
                     </div>
 
                     <div className="flex gap-3 mt-2">
-                     <button
-  ref={(el) => {
-    if (el) autoClickRef.current[doc.name] = el;
-  }}
-  onClick={() => handleAppointmentClick(doc.name)}
-  className="bg-teal-600 hover:bg-teal-700 text-white text-sm px-4 py-[6px] rounded-md flex items-center gap-2"
->
-  <FaCalendarAlt className="text-[14px]" /> Appointments
-</button>
+                      <button
+                        ref={(el) => {
+                          if (el) autoClickRef.current[doc.name] = el;
+                        }}
+                        onClick={() => handleAppointmentClick(doc.name)}
+                        className="bg-teal-600 hover:bg-teal-700 text-white text-sm px-4 py-[6px] rounded-md flex items-center gap-2"
+                      >
+                        <FaCalendarAlt className="text-[14px]" /> Appointments
+                      </button>
                     </div>
                   </div>
 
@@ -175,15 +188,15 @@ const DepartmentAppointments: React.FC = () => {
       {/* Sidebar for DoctorAppointmentsPage */}
       {isSidebarOpen && selectedDoctorName && (
         <div className="fixed inset-0 z-50 flex items-start justify-end bg-black/50">
-          <div className="bg-white w-[500px] h-full overflow-y-auto rounded-l-xl shadow-xl transform transition-transform duration-300 translate-x-0">
+          <div className="bg-white w-[500px] h-full overflow-y-auto rounded-l-xl shadow-xl transform transition-transform duration-300 translate-x-0" ref={sidebarRef}>
             {/* Side arrow for closing */}
-            <div className="flex items-center justify-between p-4">
+            {/* <div className="flex items-center justify-between p-4">
               <FaArrowLeft
                 onClick={closeSidebar}
                 className="cursor-pointer text-gray-600"
                 size={24}
               />
-            </div>
+            </div> */}
 
             <DoctorAppointmentsPage
               doctorName={selectedDoctorName} // Pass selected doctor name here

@@ -1,6 +1,6 @@
 import './App.css';
 import { useParams } from 'react-router-dom';
-import { Toaster } from 'react-hot-toast';
+// import { Toaster } from 'react-hot-toast';
 import { BrowserRouter as Router, Routes, Route, useLocation, useNavigate } from 'react-router-dom';
 import Dashboard from './pages/Dashboard';
 import MedicalLoginDashboard from './components/loginrightsidebar';
@@ -41,13 +41,12 @@ function AppLayout() {
     } else if (userRole === 'doctor') {
       return <DoctorTopbar />;
     }
-    return null; // If no role, you could return a default topbar or a login screen.
+    return null;
   };
 
   return (
     <div className="w-screen h-screen bg-[#F4F8FB] overflow-x-hidden">
       {!hideTopbar && renderTopbar()}
-       <Toaster position='top-right'/>
       <Routes>
         <Route path="/" element={<MedicalLoginDashboard />} />
         <Route path="/dashboard" element={<Dashboard />} />

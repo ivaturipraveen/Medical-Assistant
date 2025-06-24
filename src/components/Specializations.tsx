@@ -67,7 +67,7 @@ const Specializations = () => {
 
   return (
     <>
-      <div className="w-full p-4 rounded-[10px] bg-white flex flex-col justify-between">
+      <div className="w-[930px] h-[209px] p-4 rounded-[10px] bg-white flex flex-col justify-between">
         {/* Header */}
         <div className="flex justify-between items-start w-full">
           <h2 className="h-[40px] text-lg font-semibold text-gray-900">

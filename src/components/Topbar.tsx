@@ -1,11 +1,9 @@
-
 import { useNavigate, useLocation } from 'react-router-dom';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import profileImg from '../assets/profile.svg';
 import notifyIcon from '../assets/notify.svg';
 import headlineIcon from '../assets/Headline.svg';
 import {
-  Home,
   CalendarDays,
   User,
   Users,
@@ -14,6 +12,7 @@ import {
   Stethoscope,
   CalendarDaysIcon,
 } from 'lucide-react';
+import homeicon from '../assets/HomeIcon.svg';
 
 interface Suggestion {
   name: string;
@@ -145,10 +144,26 @@ export default function Topbar() {
 
   const [isDropdownVisible, setIsDropdownVisible] = useState(false);
   const toggleDropdown = () => setIsDropdownVisible(!isDropdownVisible);
+
   const handleLogout = () => {
     localStorage.removeItem('auth_token');
     navigate('/');
   };
+
+  // Ref for the dropdown to detect clicks outside
+  const dropdownRef = useRef<HTMLDivElement | null>(null); // Explicitly typing the ref
+
+  // Close the dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setIsDropdownVisible(false); // Close the dropdown if the click is outside
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   return (
     <header className="w-full h-[64px] bg-white fixed shadow-sm flex z-50 justify-center">
@@ -162,17 +177,33 @@ export default function Topbar() {
             onClick={() => navigate('/dashboard')}
           />
           <div className="flex items-center gap-2 text-sm">
-            <button onClick={() => navigate('/dashboard')} className={`flex items-center gap-1 px-4 py-2 rounded-full transition ${isActive('/dashboard') ? 'bg-[#E0F7FA] text-[#007C91]' : 'text-gray-700 hover:text-[#007C91]'}`}>
-              <Home className="w-4 h-4" /><span>Dashboard</span>
+            <button
+              onClick={() => navigate('/dashboard')}
+              className={`flex items-center px-4 py-2 rounded-full transition ${isActive('/dashboard') ? 'bg-[#E0F7FA] text-[#007C91]' : 'text-gray-700 hover:text-[#007C91]'}`}
+            >
+              <img src={homeicon} className="transition-all hover:fill-[#007C91]" />
+              <span>Dashboard</span>
             </button>
-            <button onClick={() => navigate('/appointment')} className={`flex items-center gap-1 px-4 py-2 rounded-full transition ${isActive('/appointment') ? 'bg-[#E0F7FA] text-[#007C91]' : 'text-gray-700 hover:text-[#007C91]'}`}>
-              <CalendarDays className="w-4 h-4" /><span>Appointments</span>
+            <button
+              onClick={() => navigate('/appointment')}
+              className={`flex items-center gap-1 px-4 py-2 rounded-full transition ${isActive('/appointment') ? 'bg-[#E0F7FA] text-[#007C91]' : 'text-gray-700 hover:text-[#007C91]'}`}
+            >
+              <CalendarDays className="w-4 h-4" />
+              <span>Appointments</span>
             </button>
-            <button onClick={() => navigate('/doctor')} className={`flex items-center gap-1 px-4 py-2 rounded-full transition ${isActive('/doctor') ? 'bg-[#E0F7FA] text-[#007C91]' : 'text-gray-700 hover:text-[#007C91]'}`}>
-              <User className="w-4 h-4" /><span>Doctors</span>
+            <button
+              onClick={() => navigate('/doctor')}
+              className={`flex items-center gap-1 px-4 py-2 rounded-full transition ${isActive('/doctor') ? 'bg-[#E0F7FA] text-[#007C91]' : 'text-gray-700 hover:text-[#007C91]'}`}
+            >
+              <User className="w-4 h-4" />
+              <span>Doctors</span>
             </button>
-            <button onClick={() => navigate('/patients')} className={`flex items-center gap-1 px-4 py-2 rounded-full transition ${isActive('/patients') ? 'bg-[#E0F7FA] text-[#007C91]' : 'text-gray-700 hover:text-[#007C91]'}`}>
-              <Users className="w-4 h-4" /><span>Patients</span>
+            <button
+              onClick={() => navigate('/patients')}
+              className={`flex items-center gap-1 px-4 py-2 rounded-full transition ${isActive('/patients') ? 'bg-[#E0F7FA] text-[#007C91]' : 'text-gray-700 hover:text-[#007C91]'}`}
+            >
+              <Users className="w-4 h-4" />
+              <span>Patients</span>
             </button>
           </div>
         </div>
@@ -226,7 +257,7 @@ export default function Topbar() {
             </div>
 
             {isDropdownVisible && (
-              <div className="absolute top-[40px] right-0 w-32 bg-white border border-gray-300 rounded-md shadow-md z-10">
+              <div className="absolute top-[40px] right-0 w-32 bg-white border border-gray-300 rounded-md shadow-md z-10" ref={dropdownRef}>
                 <div onClick={handleLogout} className="px-4 py-2 text-sm cursor-pointer hover:bg-gray-100">
                   Logout
                 </div>

@@ -21,7 +21,7 @@ const Feedback: React.FC = () => {
           <img src={rating} alt="Rating Icon" className="w-8 h-8" />
           <span className="text-sf font-medium">Rating & Reviews</span>
         </div>
-        <span className="text-sf font-semibold text-orange-500">4.8 / 2500</span>
+        <span className="text-sf font-semibold text-orange-500">4.8 /<span className="text-[#098289]">2500</span></span>
       </div>
 
       {/* Card 3 */}
