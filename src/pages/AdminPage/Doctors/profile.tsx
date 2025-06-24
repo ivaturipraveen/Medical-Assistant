@@ -69,7 +69,7 @@ export default function DoctorProfileModal({
       >
         {/* Header */}
         <div className="flex items-center mb-4 p-6 font-sf">
-          <FaArrowLeft className="cursor-pointer text-gray-600" onClick={onClose} />
+          {/* <FaArrowLeft className="cursor-pointer text-gray-600" onClick={onClose} /> */}
           <h2 className="mx-auto text-lg font-semibold font-Geist">Doctor Profile</h2>
         </div>
 
