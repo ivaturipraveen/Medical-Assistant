@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import profileImg from '../assets/profile.svg';
 import notifyIcon from '../assets/notify.svg';
 import headlineIcon from '../assets/Headline.svg';
-import { Home, CalendarDays, Users, ChevronDown, Search, Settings } from 'lucide-react';
+import { Home, Users, ChevronDown, Search} from 'lucide-react';
 
 
 const DoctorTopbar = () => {
