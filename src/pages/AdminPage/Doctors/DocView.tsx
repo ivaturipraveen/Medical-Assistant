@@ -9,6 +9,7 @@ import DocP from '../../../assets/DocP.svg';
 import dual from '../../../assets/dual.svg';
 import DoctorAppointmentsPage from '../Appointments/DoctorAppointmentsPage';
 
+
 interface Doctor {
   id: number;
   name: string;
@@ -230,6 +231,7 @@ export default function DoctorsGrid() {
             className="bg-white w-[500px] h-full overflow-y-auto rounded-l-xl shadow-xl transform transition-transform duration-300 translate-x-0"
             ref={sidebarRef}
           >
+            
             <DoctorAppointmentsPage doctorName={sidebarDoctorName} onClose={handleCloseSidebar} />
           </div>
         </div>

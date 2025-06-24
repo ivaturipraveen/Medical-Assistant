@@ -1,10 +1,10 @@
 import { useEffect, useRef, useState } from 'react';
-import { FaStar, FaArrowLeft } from 'react-icons/fa';
+import { FaStar} from 'react-icons/fa';
 import { FiHeart } from 'react-icons/fi';
 import axios from 'axios';
 import Docp from '../../../assets/dual.svg';
 import Docprofile from "../../../assets/DocProfile.svg";
-
+import leftarrow from '../../../assets/LeftArrow.svg';
 interface Doctor {
   id: number;
   name: string;
@@ -69,7 +69,7 @@ export default function DoctorProfileModal({
       >
         {/* Header */}
         <div className="flex items-center mb-4 p-6 font-sf">
-          {/* <FaArrowLeft className="cursor-pointer text-gray-600" onClick={onClose} /> */}
+         <img src={leftarrow} className="cursor-pointer" onClick={onClose} />
           <h2 className="mx-auto text-lg font-semibold font-Geist">Doctor Profile</h2>
         </div>
 
