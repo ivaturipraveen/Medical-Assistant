@@ -66,7 +66,7 @@ async def book_appointment(request: Request):
     try:
         # Parse and validate request body
         body = await request.json()
-        logger.info(f"📥 Booking request received: {body}")
+        logger.info(f"Booking request received: {body}")
         
         # Extract required fields
         raw_dname = body["dname"]          # Doctor name (required)
@@ -209,9 +209,9 @@ async def book_appointment(request: Request):
                 from_="+19788008375",
                 body=message_body,
             )
-            logger.info("📱 SMS confirmation sent successfully")
+            logger.info("SMS confirmation sent successfully")
         except Exception as sms_err:
-            logger.warning(f"⚠️ SMS sending failed: {sms_err}")
+            logger.warning(f"SMS sending failed: {sms_err}")
 
         # ━━━ Google Calendar Integration ━━━
         
@@ -323,7 +323,7 @@ async def get_appointment(request: Request):
                 status_code=422
             )
 
-        logger.info(f"🔍 Fetching appointments for patient ID: {patient_id}")
+        logger.info(f"Fetching appointments for patient ID: {patient_id}")
 
         # ━━━ Database Query for Patient Appointments ━━━
         

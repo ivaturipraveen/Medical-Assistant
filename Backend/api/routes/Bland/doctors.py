@@ -47,7 +47,7 @@ async def get_doctors(request: Request):
     try:
         # Parse and validate request body
         d = json.loads(await request.body())
-        logger.info(f"📥 Doctor lookup request received: {d}")
+        logger.info(f"Doctor lookup request received: {d}")
         
         raw_department = d["department"].lower()
 
@@ -61,10 +61,10 @@ async def get_doctors(request: Request):
         match = difflib.get_close_matches(raw_department, departments, n=1, cutoff=0.5)
         if match:
             corrected_department = match[0]
-            logger.info(f"🔍 Department '{raw_department}' matched to '{corrected_department}'")
+            logger.info(f"Department '{raw_department}' matched to '{corrected_department}'")
         else:
             corrected_department = raw_department
-            logger.warning(f"⚠️ No close match found for department '{raw_department}', using as-is")
+            logger.warning(f"No close match found for department '{raw_department}', using as-is")
 
         # ━━━ Retrieve Doctors in Department ━━━
         
@@ -74,7 +74,7 @@ async def get_doctors(request: Request):
 
         # Handle case where no doctors found
         if not rows:
-            logger.warning(f"❌ No doctors found in department '{corrected_department}'")
+            logger.warning(f"No doctors found in department '{corrected_department}'")
             return JSONResponse({
                 "error": f"No doctors found in department '{corrected_department}'",
                 "available_departments": departments
@@ -84,7 +84,7 @@ async def get_doctors(request: Request):
         
         # Extract doctor names and create response
         doctor_names = [row[0] for row in rows]
-        logger.info(f"✅ Found {len(doctor_names)} doctors: {doctor_names}")
+        logger.info(f"Found {len(doctor_names)} doctors: {doctor_names}")
         
         response_text = ", ".join(doctor_names)
         
@@ -93,13 +93,13 @@ async def get_doctors(request: Request):
         }, status_code=200)
 
     except KeyError as ke:
-        logger.error(f"❌ Missing required field: {ke}")
+        logger.error(f"Missing required field: {ke}")
         return JSONResponse(
             {"error": f"Missing required field: {ke}"}, 
             status_code=422
         )
     except Exception as e:
-        logger.error(f"❌ Unexpected error in get-doctors: {e}")
+        logger.error(f"Unexpected error in get-doctors: {e}")
         return JSONResponse(
             {"error": "Failed to retrieve doctors", "details": str(e)}, 
             status_code=500
@@ -129,7 +129,7 @@ async def get_time_slot(request: Request):
     try:
         # Parse and validate request body
         data = await request.json()
-        logger.info(f"📅 Time slot request received: {data}")
+        logger.info(f"Time slot request received: {data}")
         
         raw_input = data.get("d_name", "").strip()
         selected_date = data.get("S_date", "").strip()
@@ -157,7 +157,7 @@ async def get_time_slot(request: Request):
 
         # Get the day of week for availability lookup
         day_of_week = parsed_date.strftime("%a")  # Abbreviated day (e.g., "Mon", "Tue")
-        logger.info(f"🗓️ Looking for slots on {day_of_week} ({parsed_date.strftime('%Y-%m-%d')})")
+        logger.info(f"Looking for slots on {day_of_week} ({parsed_date.strftime('%Y-%m-%d')})")
 
         # ━━━ Doctor Lookup & Validation ━━━
         
@@ -169,7 +169,7 @@ async def get_time_slot(request: Request):
                 status_code=404
             )
         matched_name, _, _ = result
-        logger.info(f"👨‍⚕️ Found doctor: {matched_name}")
+        logger.info(f"Found doctor: {matched_name}")
 
         # ━━━ Query Available Time Slots ━━━
         
@@ -189,7 +189,7 @@ async def get_time_slot(request: Request):
         # ━━━ Handle No Available Slots ━━━
         
         if not time_slots:
-            logger.warning(f"❌ No available slots found for Dr. {matched_name} on {day_of_week}")
+            logger.warning(f"No available slots found for Dr. {matched_name} on {day_of_week}")
             return JSONResponse({
                 "doctor_name": matched_name,
                 "date": parsed_date.strftime("%Y-%m-%d"),
@@ -207,7 +207,7 @@ async def get_time_slot(request: Request):
             formatted_slots.append(formatted_time)
         
         response_text = ", ".join(formatted_slots)
-        logger.info(f"✅ Found {len(formatted_slots)} available slots: {response_text}")
+        logger.info(f"Found {len(formatted_slots)} available slots: {response_text}")
 
         # ━━━ Prepare Success Response ━━━
         
@@ -220,7 +220,7 @@ async def get_time_slot(request: Request):
         }, status_code=200)
 
     except Exception as e:
-        logger.error(f"❌ Error in time-slot endpoint: {str(e)}")
+        logger.error(f"Error in time-slot endpoint: {str(e)}")
         return JSONResponse(
             {"error": "Failed to get time slots", "details": str(e)},
             status_code=500
@@ -259,7 +259,7 @@ async def check_avail(request: Request):
     try:
         # Parse and validate request body
         data = await request.json()
-        logger.info(f"🔍 Availability check request: {data}")
+        logger.info(f"Availability check request: {data}")
         
         doctor_name = data.get("d_name", "").strip()
         requested_date = data.get("S_date", "").strip()
@@ -283,7 +283,7 @@ async def check_avail(request: Request):
                 status_code=400
             )
 
-        logger.info(f"📅 Checking availability for {parsed_date.strftime('%Y-%m-%d')}")
+        logger.info(f"Checking availability for {parsed_date.strftime('%Y-%m-%d')}")
 
         # ━━━ Doctor Lookup & Validation ━━━
         
@@ -295,7 +295,7 @@ async def check_avail(request: Request):
                 status_code=404
             )
         matched_name, _, _ = result
-        logger.info(f"👨‍⚕️ Checking availability for Dr. {matched_name}")
+        logger.info(f"Checking availability for Dr. {matched_name}")
 
         # ━━━ Check Availability on Requested Date ━━━
         
@@ -318,7 +318,7 @@ async def check_avail(request: Request):
         
         if time_slots:
             # Doctor is available on the requested date
-            logger.info(f"✅ Dr. {matched_name} is available on {req_day}")
+            logger.info(f"Dr. {matched_name} is available on {req_day}")
             
             # Format time slots to 12-hour format
             formatted_slots = []
@@ -339,7 +339,7 @@ async def check_avail(request: Request):
 
         # ━━━ Find Alternative Available Dates ━━━
         
-        logger.info(f"❌ Dr. {matched_name} not available on {req_day}, finding alternatives...")
+        logger.info(f"Dr. {matched_name} not available on {req_day}, finding alternatives...")
         
         # Get all days when doctor is available
         cursor.execute("""
@@ -375,7 +375,7 @@ async def check_avail(request: Request):
             if day_name in available_days and current_date.date() != parsed_date:
                 available_dates.append(current_date.strftime("%Y-%m-%d"))
 
-        logger.info(f"📝 Found {len(available_dates)} alternative dates")
+        logger.info(f"Found {len(available_dates)} alternative dates")
 
         # ━━━ Prepare Response with Alternatives ━━━
         
@@ -388,7 +388,7 @@ async def check_avail(request: Request):
         }, status_code=200)
 
     except Exception as e:
-        logger.error(f"❌ Error in check-avail endpoint: {str(e)}")
+        logger.error(f"Error in check-avail endpoint: {str(e)}")
         return JSONResponse(
             {"error": "Failed to check availability", "details": str(e)},
             status_code=500
@@ -415,7 +415,7 @@ async def get_available_booking_dates(request: Request):
     try:
         # Parse and validate request body
         data = await request.json()
-        logger.info(f"📋 Available dates request: {data}")
+        logger.info(f"Available dates request: {data}")
         
         raw_dname = data.get("d_name", "").strip()
         
@@ -438,7 +438,7 @@ async def get_available_booking_dates(request: Request):
                 status_code=404
             )
         matched_name, _, _ = result
-        logger.info(f"👨‍⚕️ Fetching available dates for Dr. {matched_name}")
+        logger.info(f"Fetching available dates for Dr. {matched_name}")
 
         # ━━━ Query Doctor's Availability ━━━
         
@@ -452,7 +452,7 @@ async def get_available_booking_dates(request: Request):
         """, (matched_name.lower(),))
         
         availability = cursor.fetchall()
-        logger.debug(f"📊 Raw availability data: {availability}")
+        logger.debug(f"Raw availability data: {availability}")
         
         # Handle case where no availability found
         if not availability:
@@ -477,7 +477,7 @@ async def get_available_booking_dates(request: Request):
                 "time": formatted_time
             })
 
-        logger.debug(f"📅 Available days: {available_days}")
+        logger.debug(f"Available days: {available_days}")
 
         # ━━━ Generate Available Dates ━━━
         
@@ -500,14 +500,14 @@ async def get_available_booking_dates(request: Request):
         for i in range(1, 8):  # Next 7 days (excluding today)
             current_date = today + timedelta(days=i)
             day_name = current_date.strftime("%A")  # Full day name
-            logger.debug(f"🔍 Checking {day_name} ({current_date.strftime('%Y-%m-%d')})")
+            logger.debug(f"Checking {day_name} ({current_date.strftime('%Y-%m-%d')})")
             
             # Check if any abbreviated day in available_days maps to this full day
             if any(day_map.get(abbr_day, '') == day_name for abbr_day in available_days):
                 available_dates.append(current_date.strftime("%Y-%m-%d"))
-                logger.debug(f"✅ Date {current_date.strftime('%Y-%m-%d')} is available")
+                logger.debug(f"Date {current_date.strftime('%Y-%m-%d')} is available")
 
-        logger.info(f"📝 Final available dates: {available_dates}")
+        logger.info(f"Final available dates: {available_dates}")
         
         # ━━━ Format Response ━━━
         
@@ -521,7 +521,7 @@ async def get_available_booking_dates(request: Request):
         }, status_code=200)
 
     except Exception as e:
-        logger.error(f"❌ Error in fetch-date endpoint: {str(e)}")
+        logger.error(f"Error in fetch-date endpoint: {str(e)}")
         return JSONResponse(
             {"error": "Failed to get booking dates", "details": str(e)},
             status_code=500
