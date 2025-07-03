@@ -5,6 +5,11 @@ from api.routes.Dashboard import Frontend,Login
 from database import conn, cursor
 from Google_calender import calendar_service
 from TwilioConnet import client
+import logging_config  # Import logging configuration
+import logging
+
+# Get logger for this module
+logger = logging.getLogger(__name__)
 
 app = FastAPI()
 
@@ -34,13 +39,18 @@ async def root():
 @app.on_event("startup")
 async def startup_event():
     cursor.execute("SELECT 1;")
-    print("Database connected..")
+    logger.info("Database connected successfully")
     
     # Test Google Calendar service
     if calendar_service:
-        print("Google Calendar connected..")
+        logger.info("Google Calendar service connected successfully")
+    else:
+        logger.warning("Google Calendar service not available")
+        
     if client:
-        print("twilio connected")
+        logger.info("Twilio service connected successfully")
+    else:
+        logger.warning("Twilio service not available")
 
         
 
